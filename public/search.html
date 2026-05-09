@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>INVBIT — Search</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">⬡</span>
+      <span class="logo-text">INV<span class="accent">BIT</span></span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">DASHBOARD</div>
+      <a href="index.html" class="nav-item"><span class="nav-icon">◈</span> Overview</a>
+      <a href="inventory.html" class="nav-item"><span class="nav-icon">◉</span> Inventory</a>
+      <a href="network.html" class="nav-item"><span class="nav-icon">◎</span> Network</a>
+      <div class="nav-section-label" style="margin-top:1.5rem">SYSTEM</div>
+      <a href="search.html" class="nav-item active"><span class="nav-icon">◌</span> Search</a>
+      <a href="settings.html" class="nav-item"><span class="nav-icon">⚙</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-dot online"></div>
+      <span>admin</span>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title">Search Inventory</div>
+      <div class="topbar-right">
+        <div class="health-badge"><span class="pulse"></span> SYSTEM ONLINE</div>
+      </div>
+    </header>
+
+    <div class="page-wrapper">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">⬡ Search Items</span>
+        </div>
+        <div class="panel-body">
+          <div class="search-box" style="margin-bottom:1rem">
+            <span>⌕</span>
+            <input type="text" id="searchInput" placeholder="Search by IP, type, or version..." />
+          </div>
+          <button class="btn-primary" onclick="searchItems()">Search</button>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:1.5rem">
+        <div class="panel-header"><span class="panel-title">Search Results</span></div>
+        <div class="panel-body" id="results" style="min-height:200px">
+          <p style="color:var(--text-dim)">Enter search terms above</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function searchItems() {
+      const query = document.getElementById('searchInput').value;
+      if (!query) { document.getElementById('results').innerHTML = '<p style="color:var(--red)">Please enter search terms</p>'; return; }
+      document.getElementById('results').innerHTML = '<div class="loading-dots" style="justify-content:flex-start"><span></span><span></span><span></span></div>';
+      try {
+        const res = await fetch('/inventory');
+        const data = await res.json();
+        const filtered = data.filter(item => 
+          item.ip?.includes(query) || item.type?.toLowerCase().includes(query.toLowerCase()) || item.version?.includes(query)
+        );
+        if (filtered.length === 0) { document.getElementById('results').innerHTML = '<p style="color:var(--red)">No results found</p>'; return; }
+        document.getElementById('results').innerHTML = filtered.map(item => 
+          `<div class="mini-doc-row" onclick="location.href='inventory.html'">
+            <span class="mini-doc-title">${item.ip} - ${item.type}</span>
+            <span class="mini-doc-type">${item.version}</span>
+          </div>`
+        ).join('');
+      } catch (err) {
+        document.getElementById('results').innerHTML = '<p style="color:var(--red)">Error loading data</p>';
+      }
+    }
+    document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+  </script>
+</body>
+</html>

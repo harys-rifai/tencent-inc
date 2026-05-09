@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>INVBIT — Inventory</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">⬡</span>
+      <span class="logo-text">INV<span class="accent">BIT</span></span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">DASHBOARD</div>
+      <a href="index.html" class="nav-item">
+        <span class="nav-icon">◈</span> Overview
+      </a>
+      <a href="inventory.html" class="nav-item active">
+        <span class="nav-icon">◉</span> Inventory
+      </a>
+      <a href="network.html" class="nav-item">
+        <span class="nav-icon">◎</span> Network
+      </a>
+      <div class="nav-section-label" style="margin-top:1.5rem">SYSTEM</div>
+      <a href="search.html" class="nav-item">
+        <span class="nav-icon">◌</span> Search
+      </a>
+      <a href="settings.html" class="nav-item">
+        <span class="nav-icon">⚙</span> Settings
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-dot online"></div>
+      <span>admin</span>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title">Inventory Management</div>
+      <div class="topbar-right">
+        <div class="health-badge"><span class="pulse"></span> SYSTEM ONLINE</div>
+      </div>
+    </header>
+
+    <div class="page-wrapper">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">◉ Inventory Items</span>
+          <button class="btn-sm" onclick="loadInventory()">Refresh</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="inventoryTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Type</th>
+                <th>AppRef</th>
+                <th>IP</th>
+                <th>Port</th>
+                <th>Version</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr><td colspan="7" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function loadInventory() {
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
+      try {
+        const res = await fetch('/inventory');
+        const data = await res.json();
+        document.getElementById('tableBody').innerHTML = data.map(item => 
+          `<tr>
+            <td>${item.id}</td>
+            <td>${item.type || '-'}</td>
+            <td>${item.appreff || '-'}</td>
+            <td>${item.ip || '-'}</td>
+            <td>${item.port || '-'}</td>
+            <td>${item.version || '-'}</td>
+            <td class="${item.active ? 'status-active' : 'status-inactive'}">${item.active ? 'Active' : 'Inactive'}</td>
+          </tr>`
+        ).join('');
+      } catch (err) {
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--red)">Error loading data</td></tr>';
+      }
+    }
+    document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+    loadInventory();
+  </script>
+</body>
+</html>

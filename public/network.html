@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>INVBIT — Network Status</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">⬡</span>
+      <span class="logo-text">INV<span class="accent">BIT</span></span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">DASHBOARD</div>
+      <a href="index.html" class="nav-item"><span class="nav-icon">◈</span> Overview</a>
+      <a href="inventory.html" class="nav-item"><span class="nav-icon">◉</span> Inventory</a>
+      <a href="network.html" class="nav-item active"><span class="nav-icon">◎</span> Network</a>
+      <div class="nav-section-label" style="margin-top:1.5rem">SYSTEM</div>
+      <a href="search.html" class="nav-item"><span class="nav-icon">◌</span> Search</a>
+      <a href="settings.html" class="nav-item"><span class="nav-icon">⚙</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-dot online"></div>
+      <span>admin</span>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title">Network Status</div>
+      <div class="topbar-right">
+        <div class="health-badge"><span class="pulse"></span> SYSTEM ONLINE</div>
+      </div>
+    </header>
+
+    <div class="page-wrapper">
+      <div class="stats-grid" style="margin-bottom:1.5rem">
+        <div class="stat-card cyan">
+          <div class="stat-icon">◈</div>
+          <div class="stat-info"><div class="stat-value">Online</div><div class="stat-label">PostgreSQL</div></div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">◉</div>
+          <div class="stat-info"><div class="stat-value">Online</div><div class="stat-label">Redis</div></div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-icon">◎</div>
+          <div class="stat-info"><div class="stat-value">Node.js</div><div class="stat-label">App Server</div></div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-icon">◌</div>
+          <div class="stat-info"><div class="stat-value">5000</div><div class="stat-label">Port</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">◈ Connection Details</span></div>
+        <div class="panel-body">
+          <div class="monitor-row"><span class="monitor-key">Database Host</span><span class="monitor-val">localhost:5432</span></div>
+          <div class="monitor-row"><span class="monitor-key">Redis Host</span><span class="monitor-val">localhost:6379</span></div>
+          <div class="monitor-row"><span class="monitor-key">Schema</span><span class="monitor-val">invschema</span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+  </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>INVBIT — Inventory Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <!-- ── SIDEBAR ─────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">⬡</span>
+      <span class="logo-text">INV<span class="accent">BIT</span></span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">DASHBOARD</div>
+      <a href="index.html" class="nav-item active">
+        <span class="nav-icon">◈</span> Overview
+      </a>
+      <a href="inventory.html" class="nav-item">
+        <span class="nav-icon">◉</span> Inventory
+      </a>
+      <a href="network.html" class="nav-item">
+        <span class="nav-icon">◎</span> Network
+      </a>
+      <div class="nav-section-label" style="margin-top:1.5rem">SYSTEM</div>
+      <a href="search.html" class="nav-item">
+        <span class="nav-icon">◌</span> Search
+      </a>
+      <a href="settings.html" class="nav-item">
+        <span class="nav-icon">⚙</span> Settings
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-dot online"></div>
+      <span id="sidebarUser">admin</span>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ───────────────────────────────────────────── -->
+  <main class="main-content">
+    <header class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title">Overview</div>
+      <div class="topbar-right">
+        <div class="health-badge" id="healthBadge">
+          <span class="pulse"></span> SYSTEM ONLINE
+        </div>
+        <div class="user-chip">
+          <span class="user-avatar">A</span>
+          <span>admin</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-wrapper">
+      <div class="stats-grid">
+        <div class="stat-card cyan">
+          <div class="stat-icon">◈</div>
+          <div class="stat-info">
+            <div class="stat-value" id="statTotal">—</div>
+            <div class="stat-label">Total Items</div>
+          </div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">◉</div>
+          <div class="stat-info">
+            <div class="stat-value" id="statActive">—</div>
+            <div class="stat-label">Active Items</div>
+          </div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-icon">◎</div>
+          <div class="stat-info">
+            <div class="stat-value" id="statInactive">—</div>
+            <div class="stat-label">Inactive Items</div>
+          </div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-icon">◌</div>
+          <div class="stat-info">
+            <div class="stat-value" id="statDB">OK</div>
+            <div class="stat-label">Database Status</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">⬡ Recent Inventory Items</span>
+          <button class="btn-sm" onclick="location.href='inventory.html'">View All →</button>
+        </div>
+        <div class="panel-body" id="recentItems">
+          <div class="loading-dots"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function loadStats() {
+      try {
+        const res = await fetch('/inventory');
+        const data = await res.json();
+        document.getElementById('statTotal').textContent = data.length;
+        document.getElementById('statActive').textContent = data.filter(i => i.active).length;
+        document.getElementById('statInactive').textContent = data.filter(i => !i.active).length;
+        
+        const recent = data.slice(-5).reverse();
+        document.getElementById('recentItems').innerHTML = recent.map(item => 
+          `<div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.8rem">
+            <span>${item.ip}</span>
+            <span class="${item.active ? 'status-active' : 'status-inactive'}">${item.active ? 'Active' : 'Inactive'}</span>
+          </div>`
+        ).join('');
+      } catch (err) {
+        document.getElementById('statTotal').textContent = '0';
+        document.getElementById('statActive').textContent = '0';
+        document.getElementById('statInactive').textContent = '0';
+      }
+    }
+    document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+    loadStats();
+  </script>
+</body>
+</html>

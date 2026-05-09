@@ -4,81 +4,82 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>INVBIT — Settings</title>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
-      <span class="logo-icon">⬡</span>
-      <span class="logo-text">INV<span class="accent">BIT</span></span>
-    </div>
+    <div class="sidebar-logo"><div class="logo-icon">⬡</div><span class="logo-text">INV<span class="accent">BIT</span></span></div>
     <nav class="sidebar-nav">
-      <div class="nav-section-label">DASHBOARD</div>
-      <a href="index.html" class="nav-item"><span class="nav-icon">◈</span> Overview</a>
-      <a href="inventory.html" class="nav-item"><span class="nav-icon">◉</span> Inventory</a>
-      <a href="network.html" class="nav-item"><span class="nav-icon">◎</span> Network</a>
-      <div class="nav-section-label" style="margin-top:1.5rem">SYSTEM</div>
-      <a href="search.html" class="nav-item"><span class="nav-icon">◌</span> Search</a>
-      <a href="settings.html" class="nav-item active"><span class="nav-icon">⚙</span> Settings</a>
+      <div class="nav-section-label">Dashboard</div>
+      <a href="index.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Overview</a>
+      <a href="inventory.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></span>Inventory</a>
+      <a href="network.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M20.49 3.51a14 14 0 0 1 0 19.8M3.51 20.49a14 14 0 0 1 0-19.8"/></svg></span>Network</a>
+      <div class="nav-section-label" style="margin-top:1rem">System</div>
+      <a href="search.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>Search</a>
+      <a href="settings.html" class="nav-item active"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</a>
     </nav>
-    <div class="sidebar-footer">
-      <div class="status-dot online"></div>
-      <span>admin</span>
-    </div>
+    <div class="sidebar-footer"><div class="status-dot online"></div><span>admin</span></div>
   </aside>
 
   <main class="main-content">
     <header class="topbar">
-      <button class="menu-toggle" id="menuToggle">☰</button>
+      <button class="menu-toggle" id="menuToggle"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
       <div class="topbar-title">Settings</div>
       <div class="topbar-right">
-        <div class="health-badge"><span class="pulse"></span> SYSTEM ONLINE</div>
+        <div class="health-badge"><span class="health-dot"></span> SYSTEM ONLINE</div>
       </div>
     </header>
 
     <div class="page-wrapper">
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">◈ Configuration</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+
+        <!-- Connection Config -->
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Database Connection</span></div>
+          <div class="panel-body">
+            <div class="form-row">
+              <div class="form-group"><label>DB Host</label><input type="text" id="dbHost" value="localhost" /></div>
+              <div class="form-group"><label>DB Port</label><input type="text" id="dbPort" value="5432" /></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Redis Host</label><input type="text" id="redisHost" value="localhost" /></div>
+              <div class="form-group"><label>Redis Port</label><input type="text" id="redisPort" value="6379" /></div>
+            </div>
+            <button class="btn-primary" onclick="saveSettings()" style="margin-top:.5rem">Save Configuration</button>
+          </div>
         </div>
-        <div class="panel-body">
-          <div class="form-group">
-            <label>Database Host</label>
-            <input type="text" value="localhost" id="dbHost" />
+
+        <!-- Add User -->
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Add New User</span></div>
+          <div class="panel-body">
+            <div class="form-group"><label>Username</label><input type="text" id="newUsername" placeholder="john_doe" /></div>
+            <div class="form-group"><label>Password</label><input type="password" id="newPassword" placeholder="••••••••" /></div>
+            <div class="form-group"><label>Role</label>
+              <select id="newRole">
+                <option value="user">User</option>
+                <option value="dba">DBA</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <button class="btn-primary" onclick="addUser()">Add User</button>
           </div>
-          <div class="form-group">
-            <label>Database Port</label>
-            <input type="text" value="5432" id="dbPort" />
-          </div>
-          <div class="form-group">
-            <label>Redis Host</label>
-            <input type="text" value="localhost" id="redisHost" />
-          </div>
-          <div class="form-group">
-            <label>Redis Port</label>
-            <input type="text" value="6379" id="redisPort" />
-          </div>
-          <button class="btn-primary" onclick="saveSettings()" style="margin-top:1rem">Save Settings</button>
         </div>
       </div>
 
-      <div class="panel" style="margin-top:1.5rem">
+      <!-- User Management -->
+      <div class="panel section-gap">
         <div class="panel-header">
-          <span class="panel-title">◉ User Management</span>
+          <span class="panel-title">User Management</span>
+          <button class="btn-sm" onclick="loadUsers()">↻ Refresh</button>
         </div>
-        <div class="panel-body">
-          <table class="data-table" id="usersTable">
+        <div class="table-wrapper">
+          <table class="data-table">
             <thead>
-              <tr>
-                <th>ID</th>
-                <th>Username</th>
-                <th>Role</th>
-                <th>Actions</th>
-              </tr>
+              <tr><th>ID</th><th>Username</th><th>Role</th><th>Created</th><th>Actions</th></tr>
             </thead>
             <tbody id="usersBody">
-              <tr><td colspan="4" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
+              <tr><td colspan="5" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -86,44 +87,72 @@
     </div>
   </main>
 
+  <div class="toast" id="toast"></div>
+
   <script>
-    async function loadUsers() {
+    document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = (type === 'success' ? '✓ ' : '✗ ') + msg;
+      t.className = 'toast ' + type + ' show';
+      setTimeout(() => t.className = 'toast', 3000);
+    }
+
+    function saveSettings() { showToast('Configuration saved'); }
+
+    async function addUser() {
+      const username = document.getElementById('newUsername').value.trim();
+      const password = document.getElementById('newPassword').value;
+      const role     = document.getElementById('newRole').value;
+      if (!username || !password) { showToast('Username and password required', 'error'); return; }
       try {
-        const res = await fetch('/users');
-        const users = await res.json();
-        document.getElementById('usersBody').innerHTML = users.map(u => 
-          `<tr>
-            <td>${u.id}</td>
-            <td>${u.username}</td>
-            <td><span class="role-badge role-${u.role}">${u.role.toUpperCase()}</span></td>
-            <td class="td-actions">
-              <button class="btn-sm" onclick="editUser(${u.id})">Edit</button>
-              <button class="btn-danger" onclick="deleteUser(${u.id})">Delete</button>
-            </td>
-          </tr>`
-        ).join('');
-      } catch (err) {
-        document.getElementById('usersBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--red)">Error loading users</td></tr>';
-      }
-    }
-
-    function saveSettings() {
-      alert('Settings saved successfully');
-    }
-
-    function editUser(id) {
-      alert('Edit user ' + id);
+        const res = await fetch('/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, role })
+        });
+        if (!res.ok) throw new Error();
+        document.getElementById('newUsername').value = '';
+        document.getElementById('newPassword').value = '';
+        showToast('User added');
+        loadUsers();
+      } catch { showToast('Failed to add user', 'error'); }
     }
 
     async function deleteUser(id) {
-      if (confirm('Delete user ' + id + '?')) {
-        alert('User deleted');
-        loadUsers();
-      }
+      if (!confirm('Delete user ' + id + '?')) return;
+      showToast('User deleted');
+      loadUsers();
     }
 
-    document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+    async function loadUsers() {
+      document.getElementById('usersBody').innerHTML = '<tr><td colspan="5" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
+      try {
+        const res = await fetch('/users');
+        const users = await res.json();
+        if (users.length === 0) { document.getElementById('usersBody').innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>No users found</p></div></td></tr>'; return; }
+        document.getElementById('usersBody').innerHTML = users.map(u => `
+          <tr>
+            <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${u.id}</td>
+            <td style="font-weight:500">${u.username}</td>
+            <td><span class="role-badge role-${u.role}">${u.role.toUpperCase()}</span></td>
+            <td style="color:var(--text-dim);font-size:.75rem">${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
+            <td class="td-actions">
+              <button class="btn-danger" onclick="deleteUser(${u.id})">Delete</button>
+            </td>
+          </tr>`).join('');
+      } catch {
+        document.getElementById('usersBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--red)">Error loading users</td></tr>';
+      }
+    }
     loadUsers();
   </script>
+
+  <style>
+    @media (max-width: 900px) {
+      .page-wrapper > div:first-child { grid-template-columns: 1fr !important; }
+    }
+  </style>
 </body>
 </html>

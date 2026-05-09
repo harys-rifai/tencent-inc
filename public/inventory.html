@@ -4,70 +4,57 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>INVBIT — Inventory</title>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <span class="logo-icon">⬡</span>
+      <div class="logo-icon">⬡</div>
       <span class="logo-text">INV<span class="accent">BIT</span></span>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-section-label">DASHBOARD</div>
-      <a href="index.html" class="nav-item">
-        <span class="nav-icon">◈</span> Overview
-      </a>
-      <a href="inventory.html" class="nav-item active">
-        <span class="nav-icon">◉</span> Inventory
-      </a>
-      <a href="network.html" class="nav-item">
-        <span class="nav-icon">◎</span> Network
-      </a>
-      <div class="nav-section-label" style="margin-top:1.5rem">SYSTEM</div>
-      <a href="search.html" class="nav-item">
-        <span class="nav-icon">◌</span> Search
-      </a>
-      <a href="settings.html" class="nav-item">
-        <span class="nav-icon">⚙</span> Settings
-      </a>
+      <div class="nav-section-label">Dashboard</div>
+      <a href="index.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Overview</a>
+      <a href="inventory.html" class="nav-item active"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></span>Inventory</a>
+      <a href="network.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M20.49 3.51a14 14 0 0 1 0 19.8M3.51 20.49a14 14 0 0 1 0-19.8"/></svg></span>Network</a>
+      <div class="nav-section-label" style="margin-top:1rem">System</div>
+      <a href="search.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>Search</a>
+      <a href="settings.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</a>
     </nav>
-    <div class="sidebar-footer">
-      <div class="status-dot online"></div>
-      <span>admin</span>
-    </div>
+    <div class="sidebar-footer"><div class="status-dot online"></div><span>admin</span></div>
   </aside>
 
   <main class="main-content">
     <header class="topbar">
-      <button class="menu-toggle" id="menuToggle">☰</button>
+      <button class="menu-toggle" id="menuToggle"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
       <div class="topbar-title">Inventory Management</div>
       <div class="topbar-right">
-        <div class="health-badge"><span class="pulse"></span> SYSTEM ONLINE</div>
+        <div class="health-badge"><span class="health-dot"></span> SYSTEM ONLINE</div>
+        <button class="btn-primary" id="addBtn">+ Add Item</button>
       </div>
     </header>
 
     <div class="page-wrapper">
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">◉ Inventory Items</span>
-          <button class="btn-sm" onclick="loadInventory()">Refresh</button>
+          <span class="panel-title">Inventory Items <span id="itemCount" style="color:var(--text-dim);font-weight:400;margin-left:.5rem"></span></span>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <div class="search-box" style="width:220px">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" id="filterInput" placeholder="Filter items..." oninput="filterTable()" />
+            </div>
+            <button class="btn-sm" onclick="loadInventory()">↻ Refresh</button>
+          </div>
         </div>
         <div class="table-wrapper">
           <table class="data-table" id="inventoryTable">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Type</th>
-                <th>AppRef</th>
-                <th>IP</th>
-                <th>Port</th>
-                <th>Version</th>
-                <th>Status</th>
+                <th>#</th><th>Type</th><th>App Ref</th><th>IP Address</th><th>Port</th><th>Version</th><th>Status</th><th>Actions</th>
               </tr>
             </thead>
             <tbody id="tableBody">
-              <tr><td colspan="7" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
+              <tr><td colspan="8" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -75,28 +62,147 @@
     </div>
   </main>
 
+  <!-- ADD / EDIT MODAL -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle">Add Inventory Item</span>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <input type="hidden" id="editId" />
+      <div class="form-row">
+        <div class="form-group"><label>Type</label><input type="text" id="fType" placeholder="e.g. PostgreSQL" /></div>
+        <div class="form-group"><label>App Ref</label><input type="text" id="fAppref" placeholder="e.g. APP001" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>IP Address</label><input type="text" id="fIp" placeholder="192.168.1.1" /></div>
+        <div class="form-group"><label>Port</label><input type="number" id="fPort" placeholder="5432" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Version</label><input type="text" id="fVersion" placeholder="e.g. 14.2" /></div>
+        <div class="form-group"><label>Status</label>
+          <select id="fActive"><option value="true">Active</option><option value="false">Inactive</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Username</label><input type="text" id="fUser" placeholder="db_user" /></div>
+        <div class="form-group"><label>Password</label><input type="password" id="fPass" placeholder="••••••••" /></div>
+      </div>
+      <div class="form-error" id="modalError"></div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveItem()">Save Item</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
   <script>
+    let allData = [];
+    document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('addBtn').onclick = () => openModal();
+    document.getElementById('modalOverlay').onclick = (e) => { if (e.target === e.currentTarget) closeModal(); };
+
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = (type === 'success' ? '✓ ' : '✗ ') + msg;
+      t.className = 'toast ' + type + ' show';
+      setTimeout(() => t.className = 'toast', 3000);
+    }
+
+    function openModal(item = null) {
+      document.getElementById('editId').value = item ? item.id : '';
+      document.getElementById('modalTitle').textContent = item ? 'Edit Inventory Item' : 'Add Inventory Item';
+      document.getElementById('fType').value    = item?.type || '';
+      document.getElementById('fAppref').value  = item?.appreff || '';
+      document.getElementById('fIp').value      = item?.ip || '';
+      document.getElementById('fPort').value    = item?.port || '';
+      document.getElementById('fVersion').value = item?.version || '';
+      document.getElementById('fActive').value  = item ? String(item.active) : 'true';
+      document.getElementById('fUser').value    = item?.user_name || '';
+      document.getElementById('fPass').value    = '';
+      document.getElementById('modalError').textContent = '';
+      document.getElementById('modalOverlay').classList.add('open');
+    }
+
+    function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+    async function saveItem() {
+      const id = document.getElementById('editId').value;
+      const body = {
+        type:      document.getElementById('fType').value,
+        appreff:   document.getElementById('fAppref').value,
+        ip:        document.getElementById('fIp').value,
+        port:      parseInt(document.getElementById('fPort').value) || null,
+        version:   document.getElementById('fVersion').value,
+        active:    document.getElementById('fActive').value === 'true',
+        user_name: document.getElementById('fUser').value,
+        password:  document.getElementById('fPass').value,
+      };
+      try {
+        const res = await fetch(id ? `/inventory/${id}` : '/inventory', {
+          method: id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) { const e = await res.json(); document.getElementById('modalError').textContent = (e.errors || [e.error]).join(', '); return; }
+        closeModal();
+        showToast(id ? 'Item updated' : 'Item added');
+        loadInventory();
+      } catch { document.getElementById('modalError').textContent = 'Network error'; }
+    }
+
+    async function deleteItem(id) {
+      if (!confirm('Delete this item?')) return;
+      try {
+        await fetch(`/inventory/${id}`, { method: 'DELETE' });
+        showToast('Item deleted');
+        loadInventory();
+      } catch { showToast('Delete failed', 'error'); }
+    }
+
+    function filterTable() {
+      const q = document.getElementById('filterInput').value.toLowerCase();
+      const filtered = q ? allData.filter(i =>
+        (i.ip||'').includes(q) || (i.type||'').toLowerCase().includes(q) ||
+        (i.appreff||'').toLowerCase().includes(q) || (i.version||'').includes(q)
+      ) : allData;
+      renderTable(filtered);
+    }
+
+    function renderTable(data) {
+      document.getElementById('itemCount').textContent = `(${data.length})`;
+      if (data.length === 0) {
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="8"><div class="empty-state"><p>No items found</p></div></td></tr>';
+        return;
+      }
+      document.getElementById('tableBody').innerHTML = data.map(item => `
+        <tr>
+          <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${item.id}</td>
+          <td style="font-weight:500">${item.type || '—'}</td>
+          <td style="color:var(--cyan);font-family:'JetBrains Mono',monospace;font-size:.75rem">${item.appreff || '—'}</td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem">${item.ip || '—'}</td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem">${item.port || '—'}</td>
+          <td>${item.version || '—'}</td>
+          <td><span class="${item.active ? 'status-active' : 'status-inactive'}">${item.active ? 'Active' : 'Inactive'}</span></td>
+          <td class="td-actions">
+            <button class="btn-sm" onclick='openModal(${JSON.stringify(item)})'>Edit</button>
+            <button class="btn-danger" onclick="deleteItem(${item.id})">Delete</button>
+          </td>
+        </tr>`).join('');
+    }
+
     async function loadInventory() {
-      document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
       try {
         const res = await fetch('/inventory');
-        const data = await res.json();
-        document.getElementById('tableBody').innerHTML = data.map(item => 
-          `<tr>
-            <td>${item.id}</td>
-            <td>${item.type || '-'}</td>
-            <td>${item.appreff || '-'}</td>
-            <td>${item.ip || '-'}</td>
-            <td>${item.port || '-'}</td>
-            <td>${item.version || '-'}</td>
-            <td class="${item.active ? 'status-active' : 'status-inactive'}">${item.active ? 'Active' : 'Inactive'}</td>
-          </tr>`
-        ).join('');
-      } catch (err) {
-        document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--red)">Error loading data</td></tr>';
+        allData = await res.json();
+        renderTable(allData);
+      } catch {
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--red)">Error loading data</td></tr>';
       }
     }
-    document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
     loadInventory();
   </script>
 </body>

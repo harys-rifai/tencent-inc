@@ -4,85 +4,108 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>INVBIT — Search</title>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
-      <span class="logo-icon">⬡</span>
-      <span class="logo-text">INV<span class="accent">BIT</span></span>
-    </div>
+    <div class="sidebar-logo"><div class="logo-icon">⬡</div><span class="logo-text">INV<span class="accent">BIT</span></span></div>
     <nav class="sidebar-nav">
-      <div class="nav-section-label">DASHBOARD</div>
-      <a href="index.html" class="nav-item"><span class="nav-icon">◈</span> Overview</a>
-      <a href="inventory.html" class="nav-item"><span class="nav-icon">◉</span> Inventory</a>
-      <a href="network.html" class="nav-item"><span class="nav-icon">◎</span> Network</a>
-      <div class="nav-section-label" style="margin-top:1.5rem">SYSTEM</div>
-      <a href="search.html" class="nav-item active"><span class="nav-icon">◌</span> Search</a>
-      <a href="settings.html" class="nav-item"><span class="nav-icon">⚙</span> Settings</a>
+      <div class="nav-section-label">Dashboard</div>
+      <a href="index.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Overview</a>
+      <a href="inventory.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></span>Inventory</a>
+      <a href="network.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M20.49 3.51a14 14 0 0 1 0 19.8M3.51 20.49a14 14 0 0 1 0-19.8"/></svg></span>Network</a>
+      <div class="nav-section-label" style="margin-top:1rem">System</div>
+      <a href="search.html" class="nav-item active"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>Search</a>
+      <a href="settings.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</a>
     </nav>
-    <div class="sidebar-footer">
-      <div class="status-dot online"></div>
-      <span>admin</span>
-    </div>
+    <div class="sidebar-footer"><div class="status-dot online"></div><span>admin</span></div>
   </aside>
 
   <main class="main-content">
     <header class="topbar">
-      <button class="menu-toggle" id="menuToggle">☰</button>
+      <button class="menu-toggle" id="menuToggle"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
       <div class="topbar-title">Search Inventory</div>
       <div class="topbar-right">
-        <div class="health-badge"><span class="pulse"></span> SYSTEM ONLINE</div>
+        <div class="health-badge"><span class="health-dot"></span> SYSTEM ONLINE</div>
       </div>
     </header>
 
     <div class="page-wrapper">
       <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">⬡ Search Items</span>
-        </div>
         <div class="panel-body">
-          <div class="search-box" style="margin-bottom:1rem">
-            <span>⌕</span>
-            <input type="text" id="searchInput" placeholder="Search by IP, type, or version..." />
+          <div class="search-box" style="margin-bottom:.75rem">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="searchInput" placeholder="Search by IP, type, app ref, or version…" oninput="liveSearch()" />
           </div>
-          <button class="btn-primary" onclick="searchItems()">Search</button>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn-sm" onclick="filterBy('active')">Active Only</button>
+            <button class="btn-sm" onclick="filterBy('inactive')">Inactive Only</button>
+            <button class="btn-sm" onclick="filterBy('all')">Show All</button>
+          </div>
         </div>
       </div>
 
-      <div class="panel" style="margin-top:1.5rem">
-        <div class="panel-header"><span class="panel-title">Search Results</span></div>
-        <div class="panel-body" id="results" style="min-height:200px">
-          <p style="color:var(--text-dim)">Enter search terms above</p>
+      <div class="panel section-gap">
+        <div class="panel-header">
+          <span class="panel-title">Results <span id="resultCount" style="color:var(--text-dim);font-weight:400"></span></span>
+        </div>
+        <div class="panel-body no-pad" id="results">
+          <div class="empty-state"><p>Start typing to search inventory…</p></div>
         </div>
       </div>
     </div>
   </main>
 
   <script>
-    async function searchItems() {
-      const query = document.getElementById('searchInput').value;
-      if (!query) { document.getElementById('results').innerHTML = '<p style="color:var(--red)">Please enter search terms</p>'; return; }
-      document.getElementById('results').innerHTML = '<div class="loading-dots" style="justify-content:flex-start"><span></span><span></span><span></span></div>';
-      try {
-        const res = await fetch('/inventory');
-        const data = await res.json();
-        const filtered = data.filter(item => 
-          item.ip?.includes(query) || item.type?.toLowerCase().includes(query.toLowerCase()) || item.version?.includes(query)
-        );
-        if (filtered.length === 0) { document.getElementById('results').innerHTML = '<p style="color:var(--red)">No results found</p>'; return; }
-        document.getElementById('results').innerHTML = filtered.map(item => 
-          `<div class="mini-doc-row" onclick="location.href='inventory.html'">
-            <span class="mini-doc-title">${item.ip} - ${item.type}</span>
-            <span class="mini-doc-type">${item.version}</span>
-          </div>`
-        ).join('');
-      } catch (err) {
-        document.getElementById('results').innerHTML = '<p style="color:var(--red)">Error loading data</p>';
-      }
-    }
     document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+    let allData = [];
+    let activeFilter = 'all';
+
+    async function init() {
+      try {
+        const r = await fetch('/inventory');
+        allData = await r.json();
+      } catch { allData = []; }
+    }
+
+    function filterBy(f) { activeFilter = f; liveSearch(); }
+
+    function liveSearch() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      let filtered = activeFilter === 'active' ? allData.filter(i => i.active)
+                   : activeFilter === 'inactive' ? allData.filter(i => !i.active)
+                   : allData;
+      if (q) {
+        filtered = filtered.filter(i =>
+          (i.ip||'').includes(q) || (i.type||'').toLowerCase().includes(q) ||
+          (i.appreff||'').toLowerCase().includes(q) || (i.version||'').includes(q)
+        );
+      }
+      document.getElementById('resultCount').textContent = q || activeFilter !== 'all' ? `(${filtered.length})` : '';
+
+      if (!q && activeFilter === 'all') {
+        document.getElementById('results').innerHTML = '<div class="empty-state"><p>Start typing to search inventory…</p></div>';
+        return;
+      }
+      if (filtered.length === 0) {
+        document.getElementById('results').innerHTML = '<div class="empty-state"><p>No results found</p></div>';
+        return;
+      }
+      document.getElementById('results').innerHTML =
+        '<div style="padding:0 1.25rem">' +
+        filtered.map(item => `
+          <div class="recent-row" style="cursor:pointer" onclick="location.href='inventory.html'">
+            <div>
+              <div style="display:flex;align-items:center;gap:.6rem">
+                <span class="recent-ip">${item.ip || '—'}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--cyan)">${item.appreff || ''}</span>
+              </div>
+              <div class="recent-type">${item.type || '—'} ${item.version ? '· v' + item.version : ''}</div>
+            </div>
+            <span class="${item.active ? 'status-active' : 'status-inactive'}">${item.active ? 'Active' : 'Inactive'}</span>
+          </div>`).join('') + '</div>';
+    }
+    init();
   </script>
 </body>
 </html>

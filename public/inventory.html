@@ -19,7 +19,11 @@
       <a href="search.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>Search</a>
       <a href="settings.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</a>
     </nav>
-    <div class="sidebar-footer"><div class="status-dot online"></div><span>admin</span></div>
+     <div class="sidebar-footer">
+       <div class="status-dot online"></div>
+       <span id="sidebarUser">admin</span>
+       <button class="btn-sm" onclick="logout()" title="Logout" style="margin-left:0.5rem;background:transparent;border:1px solid var(--border);color:var(--red);padding:0.25rem 0.5rem;border-radius:4px;font-size:0.7rem">Logout</button>
+     </div>
   </aside>
 
   <main class="main-content">
@@ -120,15 +124,59 @@
     document.getElementById('addBtn').onclick = () => openModal();
     document.getElementById('modalOverlay').onclick = e => { if (e.target === e.currentTarget) closeModal(); };
 
-    // Auth guard
-    const user = JSON.parse(localStorage.getItem('invbit_user') || '{}');
-    if (!user.id) {
-      window.location.href = '/login';
+    // Auth
+    const currentUser = JSON.parse(localStorage.getItem('invbit_user') || '{}');
+    const sessionId = localStorage.getItem('invbit_session');
+
+    // Update sidebar username
+    const userSpan = document.getElementById('sidebarUser');
+    if (userSpan && currentUser.username) {
+      userSpan.textContent = currentUser.username;
     }
+
+    // Session verification
+    (async () => {
+      if (!sessionId) {
+        window.location.href = '/login';
+        return;
+      }
+      try {
+        const res = await fetch('/auth/verify', {
+          headers: { 'X-Session-Id': sessionId }
+        });
+        if (!res.ok) {
+          localStorage.removeItem('invbit_session');
+          localStorage.removeItem('invbit_user');
+          window.location.href = '/login';
+          return;
+        }
+      } catch {
+        window.location.href = '/login';
+      }
+    })();
+
     // Hide Settings menu if not admin
-    if (user.role !== 'admin') {
+    if (currentUser.role !== 'admin') {
       const settingsLink = document.querySelector('a[href="settings.html"]');
       if (settingsLink) settingsLink.style.display = 'none';
+    }
+
+    const authHeaders = {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Session-Id': sessionId || ''
+      }
+    };
+
+    function logout() {
+      fetch('/auth/logout', {
+        method: 'POST',
+        headers: { 'X-Session-Id': sessionId }
+      }).finally(() => {
+        localStorage.removeItem('invbit_session');
+        localStorage.removeItem('invbit_user');
+        window.location.href = '/login';
+      });
     }
 
     function showToast(msg, type = 'success') {
@@ -184,22 +232,29 @@
        ));
      }
 
-    async function loadInventory(page = 1) {
-      currentPage = page;
-      const limit = document.getElementById('limitSel').value;
-      document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
-      try {
-        const res = await fetch(`/inventory?page=${page}&limit=${limit}`);
-        const { data, total, pages } = await res.json();
-        pageData = data || [];
-        document.getElementById('itemCount').textContent = `(${total} total)`;
-        document.getElementById('filterInput').value = '';
-        renderRows(pageData);
-        renderPager(page, pages);
-      } catch {
-        document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--red)">Error loading data</td></tr>';
+      const authHeaders = {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Id': localStorage.getItem('invbit_session') || ''
+        }
+      };
+
+      async function loadInventory(page = 1) {
+        currentPage = page;
+        const limit = document.getElementById('limitSel').value;
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
+        try {
+          const res = await fetch(`/inventory?page=${page}&limit=${limit}`, authHeaders);
+          const { data, total, pages } = await res.json();
+          pageData = data || [];
+          document.getElementById('itemCount').textContent = `(${total} total)`;
+          document.getElementById('filterInput').value = '';
+          renderRows(pageData);
+          renderPager(page, pages);
+        } catch {
+          document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--red)">Error loading data</td></tr>';
+        }
       }
-    }
 
     function openModal(item = null) {
       document.getElementById('editId').value    = item ? item.id : '';
@@ -234,26 +289,26 @@
         user_name: document.getElementById('fUser').value,
         password:  document.getElementById('fPass').value,
       };
-      try {
-        const res = await fetch(id ? `/inventory/${id}` : '/inventory', {
-          method:  id ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(body)
-        });
+       try {
+         const res = await fetch(id ? `/inventory/${id}` : '/inventory', {
+           method:  id ? 'PUT' : 'POST',
+           ...authHeaders,
+           body:    JSON.stringify(body)
+         });
         if (!res.ok) { const e = await res.json(); document.getElementById('modalError').textContent = (e.errors||[e.error]).join(', '); return; }
         closeModal(); showToast(id ? 'Item updated' : 'Item added');
         loadInventory(currentPage);
       } catch { document.getElementById('modalError').textContent = 'Network error'; }
     }
 
-     async function deleteItem(id) {
-       if (!confirm('Delete this item?')) return;
-       try {
-         await fetch(`/inventory/${id}`, { method: 'DELETE' });
-         showToast('Item deleted');
-         loadInventory(currentPage);
-       } catch { showToast('Delete failed', 'error'); }
-     }
+      async function deleteItem(id) {
+        if (!confirm('Delete this item?')) return;
+        try {
+          await fetch(`/inventory/${id}`, { method: 'DELETE', ...authHeaders });
+          showToast('Item deleted');
+          loadInventory(currentPage);
+        } catch { showToast('Delete failed', 'error'); }
+      }
 
      async function exportTable(table) {
        try {

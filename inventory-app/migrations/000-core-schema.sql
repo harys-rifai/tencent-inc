@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS invschema.users (
   username   VARCHAR(100) UNIQUE,
   password   VARCHAR(100),
   role       VARCHAR(20) DEFAULT 'user',
+  active     BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

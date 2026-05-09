@@ -41,10 +41,11 @@
         Settings
       </a>
     </nav>
-    <div class="sidebar-footer">
-      <div class="status-dot online"></div>
-      <span id="sidebarUser">admin</span>
-    </div>
+     <div class="sidebar-footer">
+       <div class="status-dot online"></div>
+       <span id="sidebarUser">admin</span>
+       <button class="btn-sm" onclick="logout()" title="Logout" style="margin-left:0.5rem;background:transparent;border:1px solid var(--border);color:var(--red);padding:0.25rem 0.5rem;border-radius:4px;font-size:0.7rem">Logout</button>
+     </div>
   </aside>
 
   <main class="main-content">
@@ -111,52 +112,95 @@
     <script>
      document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
 
-     // Auth guard
-     const user = JSON.parse(localStorage.getItem('invbit_user') || '{}');
-     if (!user.id) {
-       window.location.href = '/login';
+     // Get current user & session
+     const currentUser = JSON.parse(localStorage.getItem('invbit_user') || '{}');
+     const sessionId = localStorage.getItem('invbit_session');
+
+     // Update sidebar username
+     const userSpan = document.getElementById('sidebarUser');
+     if (userSpan && currentUser.username) {
+       userSpan.textContent = currentUser.username;
      }
 
+     // Session verification
+     (async () => {
+       if (!sessionId) {
+         window.location.href = '/login';
+         return;
+       }
+       try {
+         const res = await fetch('/auth/verify', {
+           headers: { 'X-Session-Id': sessionId }
+         });
+         if (!res.ok) {
+           localStorage.removeItem('invbit_session');
+           localStorage.removeItem('invbit_user');
+           window.location.href = '/login';
+           return;
+         }
+       } catch {
+         window.location.href = '/login';
+       }
+     })();
+
      // Hide Settings menu if not admin
-     if (user.role !== 'admin') {
+     if (currentUser.role !== 'admin') {
        const settingsLink = document.querySelector('a[href="settings.html"]');
        if (settingsLink) settingsLink.style.display = 'none';
      }
 
-     async function loadStats() {
-      try {
-        const [statsRes, recentRes] = await Promise.all([
-          fetch('/inventory/stats'),
-          fetch('/inventory?page=1&limit=6')
-        ]);
-        const stats  = await statsRes.json();
-        const recent = await recentRes.json();
-        document.getElementById('statTotal').textContent    = stats.total    || 0;
-        document.getElementById('statActive').textContent   = stats.active   || 0;
-        document.getElementById('statInactive').textContent = stats.inactive || 0;
+     const authHeaders = {
+       headers: {
+         'Content-Type': 'application/json',
+         'X-Session-Id': sessionId || ''
+       }
+     };
 
-        const items = recent.data || [];
-        if (!items.length) {
-          document.getElementById('recentItems').innerHTML = '<div class="empty-state"><p>No inventory items yet</p></div>';
-          return;
-        }
-        document.getElementById('recentItems').innerHTML =
-          '<div style="padding:0 1.25rem">' +
-          items.map(item => `
-            <div class="recent-row">
-              <div>
-                <div class="recent-ip">${item.ip || '—'}</div>
-                <div class="recent-type">${item.type || '—'} ${item.version ? '· v' + item.version : ''}</div>
-              </div>
-              <span class="${item.active ? 'status-active' : 'status-inactive'}">${item.active ? 'Active' : 'Inactive'}</span>
-            </div>`).join('') + '</div>';
-      } catch {
-        ['statTotal','statActive','statInactive'].forEach(id => document.getElementById(id).textContent = '0');
-        document.getElementById('healthBadge').className = 'health-badge error';
-        document.getElementById('healthBadge').innerHTML = '<span class="health-dot"></span> DB ERROR';
-      }
-    }
-    loadStats();
+     function logout() {
+       fetch('/auth/logout', {
+         method: 'POST',
+         headers: { 'X-Session-Id': sessionId }
+       }).finally(() => {
+         localStorage.removeItem('invbit_session');
+         localStorage.removeItem('invbit_user');
+         window.location.href = '/login';
+       });
+     }
+
+     async function loadStats() {
+       try {
+         const [statsRes, recentRes] = await Promise.all([
+           fetch('/inventory/stats', authHeaders),
+           fetch('/inventory?page=1&limit=6', authHeaders)
+         ]);
+         const stats  = await statsRes.json();
+         const recent = await recentRes.json();
+         document.getElementById('statTotal').textContent    = stats.total    || 0;
+         document.getElementById('statActive').textContent   = stats.active   || 0;
+         document.getElementById('statInactive').textContent = stats.inactive || 0;
+
+         const items = recent.data || [];
+         if (!items.length) {
+           document.getElementById('recentItems').innerHTML = '<div class="empty-state"><p>No inventory items yet</p></div>';
+           return;
+         }
+         document.getElementById('recentItems').innerHTML =
+           '<div style="padding:0 1.25rem">' +
+           items.map(item => `
+             <div class="recent-row">
+               <div>
+                 <div class="recent-ip">${item.ip || '—'}</div>
+                 <div class="recent-type">${item.type || '—'} ${item.version ? '· v' + item.version : ''}</div>
+               </div>
+               <span class="${item.active ? 'status-active' : 'status-inactive'}">${item.active ? 'Active' : 'Inactive'}</span>
+             </div>`).join('') + '</div>';
+       } catch {
+         ['statTotal','statActive','statInactive'].forEach(id => document.getElementById(id).textContent = '0');
+         document.getElementById('healthBadge').className = 'health-badge error';
+         document.getElementById('healthBadge').innerHTML = '<span class="health-dot"></span> DB ERROR';
+       }
+     }
+     loadStats();
   </script>
 </body>
 </html>

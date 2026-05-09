@@ -19,7 +19,11 @@
       <a href="search.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>Search</a>
       <a href="settings.html" class="nav-item active"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</a>
     </nav>
-    <div class="sidebar-footer"><div class="status-dot online"></div><span>admin</span></div>
+     <div class="sidebar-footer">
+       <div class="status-dot online"></div>
+       <span id="sidebarUser">admin</span>
+       <button class="btn-sm" onclick="logout()" title="Logout" style="margin-left:0.5rem;background:transparent;border:1px solid var(--border);color:var(--red);padding:0.25rem 0.5rem;border-radius:4px;font-size:0.7rem">Logout</button>
+     </div>
   </aside>
 
   <main class="main-content">
@@ -188,7 +192,18 @@
       setTimeout(() => t.className = 'toast', 3000);
     }
 
-    function saveSettings() { showToast('Configuration saved'); }
+     function saveSettings() { showToast('Configuration saved'); }
+
+     function logout() {
+       fetch('/auth/logout', {
+         method: 'POST',
+         headers: { 'X-Session-Id': localStorage.getItem('invbit_session') || '' }
+       }).finally(() => {
+         localStorage.removeItem('invbit_session');
+         localStorage.removeItem('invbit_user');
+         window.location.href = '/login';
+       });
+     }
 
      async function addUser() {
        const username = document.getElementById('newUsername').value.trim();

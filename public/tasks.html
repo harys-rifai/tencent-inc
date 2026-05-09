@@ -19,7 +19,11 @@
       <a href="search.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>Search</a>
       <a href="settings.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</a>
     </nav>
-    <div class="sidebar-footer"><div class="status-dot online"></div><span>admin</span></div>
+     <div class="sidebar-footer">
+       <div class="status-dot online"></div>
+       <span id="sidebarUser">admin</span>
+       <button class="btn-sm" onclick="logout()" title="Logout" style="margin-left:0.5rem;background:transparent;border:1px solid var(--border);color:var(--red);padding:0.25rem 0.5rem;border-radius:4px;font-size:0.7rem">Logout</button>
+     </div>
   </aside>
 
   <main class="main-content">
@@ -154,19 +158,63 @@
 
   <div class="toast" id="toast"></div>
 
-  <script>
+   <script>
     document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('modalOverlay').onclick = e => { if (e.target === e.currentTarget) closeModal(); };
 
-    // Auth guard
-    const user = JSON.parse(localStorage.getItem('invbit_user') || '{}');
-    if (!user.id) {
-      window.location.href = '/login';
+    // Auth
+    const currentUser = JSON.parse(localStorage.getItem('invbit_user') || '{}');
+    const sessionId = localStorage.getItem('invbit_session');
+
+    // Update sidebar username
+    const userSpan = document.getElementById('sidebarUser');
+    if (userSpan && currentUser.username) {
+      userSpan.textContent = currentUser.username;
     }
+
+    // Session verification
+    (async () => {
+      if (!sessionId) {
+        window.location.href = '/login';
+        return;
+      }
+      try {
+        const res = await fetch('/auth/verify', {
+          headers: { 'X-Session-Id': sessionId }
+        });
+        if (!res.ok) {
+          localStorage.removeItem('invbit_session');
+          localStorage.removeItem('invbit_user');
+          window.location.href = '/login';
+          return;
+        }
+      } catch {
+        window.location.href = '/login';
+      }
+    })();
+
     // Hide Settings menu if not admin
-    if (user.role !== 'admin') {
+    if (currentUser.role !== 'admin') {
       const settingsLink = document.querySelector('a[href="settings.html"]');
       if (settingsLink) settingsLink.style.display = 'none';
+    }
+
+    const authHeaders = {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Session-Id': sessionId || ''
+      }
+    };
+
+    function logout() {
+      fetch('/auth/logout', {
+        method: 'POST',
+        headers: { 'X-Session-Id': sessionId }
+      }).finally(() => {
+        localStorage.removeItem('invbit_session');
+        localStorage.removeItem('invbit_user');
+        window.location.href = '/login';
+      });
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -218,39 +266,48 @@
     }
 
     // ── Board stats ───────────────────────────────────────────────────────────
-    async function loadStats() {
-      try {
-        const r = await fetch('/tasks?limit=1000');
-        const d = await r.json();
-        const all = d.data || [];
-        document.getElementById('cntTotal').textContent = all.length;
-        document.getElementById('cntTodo').textContent       = all.filter(t => t.status === 'todo').length;
-        document.getElementById('cntInProgress').textContent = all.filter(t => t.status === 'in-progress').length;
-        document.getElementById('cntDone').textContent       = all.filter(t => t.status === 'done').length;
-      } catch {}
-    }
+     async function loadStats() {
+       try {
+         const r = await fetch('/tasks', authHeaders);
+         const data = await r.json();
+         const total = data.total || 0;
+         const inProgress = (data.data || []).filter(t => t.status === 'in-progress').length;
+         const todo = (data.data || []).filter(t => t.status === 'todo').length;
+         const done = (data.data || []).filter(t => t.status === 'done').length;
+         document.getElementById('cntTotal').textContent = total;
+         document.getElementById('cntInProgress').textContent = inProgress;
+         document.getElementById('cntTodo').textContent = todo;
+         document.getElementById('cntDone').textContent = done;
+       } catch {
+         // Ignore errors
+       }
+     }
 
-    // ── LIST view ─────────────────────────────────────────────────────────────
-    async function loadList(page = 1) {
-      const status   = document.getElementById('fStatus').value;
-      const priority = document.getElementById('fPriority').value;
-      const limit    = document.getElementById('fLimit').value;
-      const body = document.getElementById('listBody');
-      body.innerHTML = '<tr><td colspan="7" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
-
-      try {
-        const params = new URLSearchParams({ page, limit });
+// ── LIST view ─────────────────────────────────────────────────────────────
+      async function loadList(page = 1) {
+        const status   = document.getElementById('fStatus').value;
+        const priority = document.getElementById('fPriority').value;
+        const params = new URLSearchParams({ page, limit: 20 });
         if (status)   params.append('status', status);
         if (priority) params.append('priority', priority);
-        const res = await fetch('/tasks?' + params);
-        const { data, total, pages } = await res.json();
 
-        if (!data || data.length === 0) {
-          body.innerHTML = '<tr><td colspan="7"><div class="empty-state"><p>No tasks found</p></div></td></tr>';
-          document.getElementById('listPager').innerHTML = '';
-          return;
+        try {
+          const res = await fetch(`/tasks?${params}`, authHeaders);
+          const { data, pages } = await res.json();
+          renderTaskList(data || [], page, pages);
+        } catch {
+          document.getElementById('listBody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--red)">Error loading tasks</td></tr>';
         }
-        body.innerHTML = data.map(t => `
+      }
+
+      function renderTaskList(data, page, pages) {
+      const body = document.getElementById('listBody');
+      if (!data || data.length === 0) {
+        body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">No tasks found</td></tr>';
+        document.getElementById('listPager').innerHTML = '';
+        return;
+      }
+      body.innerHTML = data.map(t => `
           <tr>
             <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${t.id}</td>
             <td style="font-weight:500;max-width:240px;white-space:normal;line-height:1.4">${t.title}</td>
@@ -263,18 +320,15 @@
               <button class="btn-danger" onclick="deleteTask(${t.id})">Del</button>
             </td>
           </tr>`).join('');
-        renderPager('listPager', page, pages, 'loadList');
-      } catch {
-        body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--red)">Error loading tasks</td></tr>';
-      }
+      renderPager('listPager', page, pages, 'loadList');
     }
 
     // ── BOARD view ────────────────────────────────────────────────────────────
-    async function loadBoard() {
-      document.getElementById('kanbanBoard').innerHTML = '<div class="loading-dots" style="grid-column:1/-1"><span></span><span></span><span></span></div>';
-      try {
-        const res = await fetch('/tasks/board');
-        const board = await res.json();
+     async function loadBoard() {
+       document.getElementById('kanbanBoard').innerHTML = '<div class="loading-dots" style="grid-column:1/-1"><span></span><span></span><span></span></div>';
+       try {
+         const res = await fetch('/tasks/board', authHeaders);
+         const board = await res.json();
         const cols = [
           { key:'todo',        label:'📝 Todo',        color:'var(--text-dim)' },
           { key:'in-progress', label:'🔄 In Progress',  color:'var(--cyan)' },
@@ -310,7 +364,7 @@
     async function loadTimeline() {
       document.getElementById('timelineContent').innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
       try {
-        const res = await fetch('/tasks/timeline');
+        const res = await fetch('/tasks/timeline', authHeaders);
         const tasks = await res.json();
 
         if (!tasks.length) {
@@ -379,41 +433,41 @@
 
     function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 
-    async function saveTask() {
-      const id = document.getElementById('editId').value;
-      const body = {
-        title:       document.getElementById('fTitle').value,
-        description: document.getElementById('fDesc').value,
-        status:      document.getElementById('fStat').value,
-        priority:    document.getElementById('fPrio').value,
-        due_date:    document.getElementById('fDue').value || null,
-        assigned_to: document.getElementById('fAssigned').value || null,
-      };
-      try {
-        const res = await fetch(id ? `/tasks/${id}` : '/tasks', {
-          method:  id ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(body)
-        });
-        if (!res.ok) {
-          const e = await res.json();
-          document.getElementById('modalError').textContent = (e.errors || [e.error]).join(', ');
-          return;
-        }
-        closeModal();
-        showToast(id ? 'Task updated' : 'Task created');
-        refresh();
-      } catch { document.getElementById('modalError').textContent = 'Network error'; }
-    }
-
-     async function deleteTask(id) {
-       if (!confirm('Delete this task?')) return;
+     async function saveTask() {
+       const id = document.getElementById('editId').value;
+       const body = {
+         title:       document.getElementById('fTitle').value,
+         description: document.getElementById('fDesc').value,
+         status:      document.getElementById('fStat').value,
+         priority:    document.getElementById('fPrio').value,
+         due_date:    document.getElementById('fDue').value || null,
+         assigned_to: document.getElementById('fAssigned').value || null,
+       };
        try {
-         await fetch(`/tasks/${id}`, { method: 'DELETE' });
-         showToast('Task deleted');
+         const res = await fetch(id ? `/tasks/${id}` : '/tasks', {
+           method:  id ? 'PUT' : 'POST',
+           ...authHeaders,
+           body:    JSON.stringify(body)
+         });
+         if (!res.ok) {
+           const e = await res.json();
+           document.getElementById('modalError').textContent = (e.errors || [e.error]).join(', ');
+           return;
+         }
+         closeModal();
+         showToast(id ? 'Task updated' : 'Task created');
          refresh();
-       } catch { showToast('Delete failed', 'error'); }
+       } catch { document.getElementById('modalError').textContent = 'Network error'; }
      }
+
+      async function deleteTask(id) {
+        if (!confirm('Delete this task?')) return;
+        try {
+          await fetch(`/tasks/${id}`, { method: 'DELETE', ...authHeaders });
+          showToast('Task deleted');
+          refresh();
+        } catch { showToast('Delete failed', 'error'); }
+      }
 
      async function exportTable(table) {
        try {

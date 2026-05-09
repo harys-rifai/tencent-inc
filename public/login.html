@@ -77,6 +77,8 @@
           err.textContent = data.error || 'Login failed';
           return;
         }
+        // Store session and user
+        localStorage.setItem('invbit_session', data.sessionId);
         localStorage.setItem('invbit_user', JSON.stringify(data.user));
         window.location.href = '/';
       } catch {
@@ -84,10 +86,26 @@
       }
     };
 
-    // If already logged in, redirect to home
-    if (localStorage.getItem('invbit_user')) {
-      window.location.href = '/';
-    }
+    // If already logged in, verify session and redirect
+    (async () => {
+      const session = localStorage.getItem('invbit_session');
+      if (session) {
+        try {
+          const res = await fetch('/auth/verify', {
+            headers: { 'X-Session-Id': session }
+          });
+          if (res.ok) {
+            window.location.href = '/';
+          } else {
+            localStorage.removeItem('invbit_session');
+            localStorage.removeItem('invbit_user');
+          }
+        } catch {
+          localStorage.removeItem('invbit_session');
+          localStorage.removeItem('invbit_user');
+        }
+      }
+    })();
   </script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { query } = require('./db');
-const { connectRedis, setCache, getCache, deleteCache, deleteCachePattern } = require('./cache');
+const { connectRedis, setCache, getCache, deleteCache, deleteCachePattern, createSession, getSession, updateSessionActivity, deleteSession } = require('./cache');
 
 const app = express();
 app.use(express.json());
@@ -56,20 +56,39 @@ const toCSV = (rows) => {
 };
 
 // ── Auth middleware ────────────────────────────────────────────────────────────
+const requireAuth = async (req, res, next) => {
+  try {
+    const sessionId = req.headers['x-session-id'];
+    if (!sessionId) {
+      return res.status(401).json({ error: 'Session required' });
+    }
+    const session = await getSession(sessionId);
+    if (!session) {
+      return res.status(401).json({ error: 'Invalid or expired session' });
+    }
+    // Refresh session activity (extend TTL)
+    await updateSessionActivity(sessionId);
+    req.user = { id: session.userId };
+    req.session = session;
+    next();
+  } catch (err) {
+    console.error('Auth error:', err);
+    res.status(500).json({ error: 'Authorization failed' });
+  }
+};
+
 const requireAdmin = async (req, res, next) => {
   try {
-    // Get user from localStorage via header or session? For simplicity, check from body/query
-    // In production, use JWT or session cookie
-    const userId = req.headers['x-user-id']; // Will be sent from frontend
-    if (!userId) {
+    // Get user from DB (since session doesn't store role)
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ error: 'Authentication required' });
     }
-    const result = await query('SELECT role FROM invschema.users WHERE id = $1', [userId]);
+    const result = await query('SELECT role FROM invschema.users WHERE id = $1', [req.user.id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     if (result.rows[0].role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
-    req.user = result.rows[0];
+    req.user.role = result.rows[0].role;
     next();
   } catch (err) {
     console.error('Auth error:', err);
@@ -144,7 +163,7 @@ initDB();
 // ════════════════════════════════════════════════════════════════════════════
 
 // GET /inventory/stats  (dashboard counters — no pagination)
-app.get('/inventory/stats', async (req, res) => {
+app.get('/inventory/stats', requireAuth, async (req, res) => {
   try {
     const cached = await getCache('inv_stats');
     if (cached) return res.json(cached);
@@ -177,7 +196,7 @@ app.get('/inventory/stats', async (req, res) => {
 });
 
 // GET /inventory?page&limit
-app.get('/inventory', async (req, res) => {
+app.get('/inventory', requireAuth, async (req, res) => {
   try {
     const { page, limit, offset } = paginate(req);
     const cacheKey = invCacheKey(page, limit);
@@ -207,7 +226,7 @@ app.get('/inventory', async (req, res) => {
 });
 
 // GET /inventory/:id
-app.get('/inventory/:id', async (req, res) => {
+app.get('/inventory/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const cached = await getCache(`inv_item_${id}`);
@@ -232,7 +251,7 @@ app.get('/inventory/:id', async (req, res) => {
 });
 
 // POST /inventory
-app.post('/inventory', async (req, res) => {
+app.post('/inventory', requireAuth, async (req, res) => {
   try {
     const { type, appreff, ip, port, version, active, stage, note, user_name, password } = req.body;
     const errors = validateInventory(req.body);
@@ -258,7 +277,7 @@ app.post('/inventory', async (req, res) => {
  });
 
  // PUT /inventory/:id
-app.put('/inventory/:id', async (req, res) => {
+app.put('/inventory/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { type, appreff, ip, port, version, active, stage, note, user_name, password } = req.body;
@@ -292,7 +311,7 @@ app.put('/inventory/:id', async (req, res) => {
  });
 
  // DELETE /inventory/:id
-app.delete('/inventory/:id', async (req, res) => {
+app.delete('/inventory/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const result = await query('DELETE FROM invschema.inventory WHERE id=$1 RETURNING *', [id]);
@@ -319,7 +338,7 @@ app.delete('/inventory/:id', async (req, res) => {
 // ════════════════════════════════════════════════════════════════════════════
 
 // GET /tasks?page&limit&status&priority
-app.get('/tasks', async (req, res) => {
+app.get('/tasks', requireAuth, async (req, res) => {
   try {
     const { page, limit, offset } = paginate(req);
     const { status, priority } = req.query;
@@ -363,7 +382,7 @@ app.get('/tasks', async (req, res) => {
 });
 
 // GET /tasks/board  — all tasks grouped by status (no pagination, for kanban)
-app.get('/tasks/board', async (req, res) => {
+app.get('/tasks/board', requireAuth, async (req, res) => {
   try {
     const cached = await getCache('tasks_board');
     if (cached) return res.json(cached);
@@ -387,7 +406,7 @@ app.get('/tasks/board', async (req, res) => {
 });
 
 // GET /tasks/timeline  — all tasks with due_date, ordered by due_date
-app.get('/tasks/timeline', async (req, res) => {
+app.get('/tasks/timeline', requireAuth, async (req, res) => {
   try {
     const cached = await getCache('tasks_timeline');
     if (cached) return res.json(cached);
@@ -412,7 +431,7 @@ app.get('/tasks/timeline', async (req, res) => {
 });
 
 // POST /tasks
-app.post('/tasks', async (req, res) => {
+app.post('/tasks', requireAuth, async (req, res) => {
   try {
     const { title, description, status, priority, due_date, assigned_to } = req.body;
     const errors = validateTask(req.body);
@@ -423,8 +442,7 @@ app.post('/tasks', async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
       [title, description, status || 'todo', priority || 'medium', due_date || null, assigned_to || null]
     );
-    await deleteCache('tasks_board');
-    await deleteCache('tasks_timeline');
+    await deleteCachePattern('tasks_*');
     res.status(201).json(result.rows[0]);
    } catch (err) {
      console.error(err);
@@ -440,7 +458,7 @@ app.post('/tasks', async (req, res) => {
 });
 
 // PUT /tasks/:id
-app.put('/tasks/:id', async (req, res) => {
+app.put('/tasks/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, status, priority, due_date, assigned_to } = req.body;
@@ -455,8 +473,7 @@ app.put('/tasks/:id', async (req, res) => {
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Task not found' });
 
-    await deleteCache('tasks_board');
-    await deleteCache('tasks_timeline');
+    await deleteCachePattern('tasks_*');
     res.json(result.rows[0]);
    } catch (err) {
      console.error(err);
@@ -472,14 +489,13 @@ app.put('/tasks/:id', async (req, res) => {
 });
 
 // DELETE /tasks/:id
-app.delete('/tasks/:id', async (req, res) => {
+app.delete('/tasks/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const result = await query('DELETE FROM invschema.tasks WHERE id=$1 RETURNING *', [id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Task not found' });
 
-    await deleteCache('tasks_board');
-    await deleteCache('tasks_timeline');
+    await deleteCachePattern('tasks_*');
     res.json({ message: 'Task deleted' });
    } catch (err) {
      console.error(err);
@@ -523,17 +539,14 @@ app.get('/users', async (req, res) => {
     const result = paginatedResult(dataRes.rows, countRes.rows[0].count, page, limit);
     await setCache(cacheKey, result, 300);
     res.json(result);
-  } catch (err) {
-    console.error(err);
-    await logError(err, { source: 'users', route: req.path, method: req.method });
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+   } catch (err) {
+     console.error(err);
+     await logError(err, { source: 'users', route: req.path, method: req.method });
      res.status(500).json({ error: 'Internal server error' });
    }
-});
+ });
 
-app.post('/users', async (req, res) => {
+ app.post('/users', async (req, res) => {
   try {
     const { username, password, role } = req.body;
     // Only admins can create users (check via header)
@@ -763,7 +776,7 @@ app.get('/menu', async (req, res) => {
 });
 
 // GET /admin/menu — full menu data (for admin editing)
-app.get('/admin/menu', requireAdmin, async (req, res) => {
+app.get('/admin/menu', requireAuth, requireAdmin, async (req, res) => {
   try {
     const result = await query(`
       SELECT * FROM invschema.menu_items
@@ -946,22 +959,53 @@ app.post('/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     const result = await query(
-      'SELECT * FROM invschema.users WHERE username=$1 AND password=$2', [username, password]
+      'SELECT * FROM invschema.users WHERE username=$1 AND password=$2 AND active = true',
+      [username, password]
     );
     if (result.rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
+
     const user = result.rows[0];
-    res.json({ user: { id: user.id, username: user.username, role: user.role } });
-   } catch (err) {
-     console.error(err);
-     await logError(err, {
-       source: 'inventory',
-       route: req.path,
-       method: req.method,
-       ip_address: req.ip || req.connection.remoteAddress,
-       user_agent: req.get('User-Agent')
-     });
-     res.status(500).json({ error: 'Internal server error' });
-   }
+
+    // Create session (20 minutes)
+    const sessionId = await createSession(user.id, 20);
+
+    res.json({
+      sessionId,
+      user: { id: user.id, username: user.username, role: user.role }
+    });
+  } catch (err) {
+    console.error(err);
+    await logError(err, {
+      source: 'auth',
+      route: req.path,
+      method: req.method,
+      ip_address: req.ip || req.connection.remoteAddress,
+      user_agent: req.get('User-Agent')
+    });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/auth/logout', async (req, res) => {
+  try {
+    const sessionId = req.headers['x-session-id'];
+    if (sessionId) {
+      await deleteSession(sessionId);
+    }
+    res.json({ message: 'Logged out successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Logout failed' });
+  }
+});
+
+// Session validation endpoint (keep-alive)
+app.get('/auth/verify', requireAuth, async (req, res) => {
+  res.json({
+    valid: true,
+    user: { id: req.user.id },
+    session: req.session
+  });
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

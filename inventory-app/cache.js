@@ -4,32 +4,66 @@ require('dotenv').config({ path: __dirname + '/.env' });
 let redisClient;
 
 const connectRedis = async () => {
-  redisClient = redis.createClient({
-    socket: {
-      host: process.env.REDIS_HOST,
-      port: process.env.REDIS_PORT
-    }
-  });
+  try {
+    redisClient = redis.createClient({
+      socket: {
+        host: process.env.REDIS_HOST,
+        port: process.env.REDIS_PORT
+      }
+    });
 
-  redisClient.on('error', (err) => console.log('Redis Client Error', err));
+    redisClient.on('error', (err) => console.log('Redis Client Error:', err.message));
+    redisClient.on('connect', () => console.log('Redis connected'));
 
-  await redisClient.connect();
+    await redisClient.connect();
+    console.log('Redis connected successfully');
+    return redisClient;
+  } catch (err) {
+    console.log('Redis connection failed - caching disabled:', err.message);
+    return null;
+  }
 };
 
 const setCache = async (key, value, ttl = 3600) => {
-  if (!redisClient) await connectRedis();
-  await redisClient.setEx(key, ttl, JSON.stringify(value));
+  if (!redisClient) {
+    await connectRedis();
+  }
+  if (redisClient) {
+    try {
+      await redisClient.setEx(key, ttl, JSON.stringify(value));
+    } catch (err) {
+      console.error('Cache set error:', err.message);
+    }
+  }
 };
 
 const getCache = async (key) => {
-  if (!redisClient) await connectRedis();
-  const cached = await redisClient.get(key);
-  return cached ? JSON.parse(cached) : null;
+  if (!redisClient) {
+    await connectRedis();
+  }
+  if (redisClient) {
+    try {
+      const cached = await redisClient.get(key);
+      return cached ? JSON.parse(cached) : null;
+    } catch (err) {
+      console.error('Cache get error:', err.message);
+      return null;
+    }
+  }
+  return null;
 };
 
 const deleteCache = async (key) => {
-  if (!redisClient) await connectRedis();
-  await redisClient.del(key);
+  if (!redisClient) {
+    await connectRedis();
+  }
+  if (redisClient) {
+    try {
+      await redisClient.del(key);
+    } catch (err) {
+      console.error('Cache delete error:', err.message);
+    }
+  }
 };
 
 const deleteCachePattern = async (pattern) => {

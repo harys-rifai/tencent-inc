@@ -88,24 +88,32 @@
       window.location.href = '/login';
     }
 
-    async function checkHealth() {
-      document.getElementById('lastChecked').textContent = new Date().toLocaleTimeString();
-      try {
-        const r = await fetch('/inventory');
-        const ok = r.ok;
-        document.getElementById('pgStatus').textContent = ok ? 'Online' : 'Error';
-        document.getElementById('rdStatus').textContent = ok ? 'Online' : 'Error';
-        document.getElementById('healthBadge').className = ok ? 'health-badge' : 'health-badge error';
-        document.getElementById('healthBadge').innerHTML = ok
-          ? '<span class="health-dot"></span> SYSTEM ONLINE'
-          : '<span class="health-dot"></span> DEGRADED';
-      } catch {
-        document.getElementById('pgStatus').textContent = 'Offline';
-        document.getElementById('rdStatus').textContent = 'Unknown';
-        document.getElementById('healthBadge').className = 'health-badge error';
-        document.getElementById('healthBadge').innerHTML = '<span class="health-dot"></span> DB OFFLINE';
-      }
-    }
+     async function checkHealth() {
+       document.getElementById('lastChecked').textContent = new Date().toLocaleTimeString();
+       const setStatus = (pg, rd, badgeClass, badgeHtml) => {
+         document.getElementById('pgStatus').textContent = pg;
+         document.getElementById('rdStatus').textContent = rd;
+         document.getElementById('healthBadge').className = badgeClass;
+         document.getElementById('healthBadge').innerHTML = badgeHtml;
+       };
+
+       try {
+         const controller = new AbortController();
+         const timeout = setTimeout(() => controller.abort(), 5000);
+
+         const r = await fetch('/inventory/stats', { signal: controller.signal });
+         clearTimeout(timeout);
+
+         if (r.ok) {
+           setStatus('Online', 'Online', 'health-badge', '<span class="health-dot"></span> SYSTEM ONLINE');
+         } else {
+           setStatus('Error', 'Error', 'health-badge error', '<span class="health-dot"></span> API ERROR');
+         }
+       } catch (err) {
+         console.error('Health check failed:', err);
+         setStatus('Offline', 'Offline', 'health-badge error', '<span class="health-dot"></span> CONNECTION FAILED');
+       }
+     }
     checkHealth();
     setInterval(checkHealth, 30000);
   </script>

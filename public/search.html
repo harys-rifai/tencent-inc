@@ -62,6 +62,11 @@
     let allData = [];
     let activeFilter = 'all';
 
+    // Auth guard
+    if (!localStorage.getItem('invbit_user')) {
+      window.location.href = '/login';
+    }
+
     async function init() {
       try {
         const r = await fetch('/inventory');

@@ -108,8 +108,13 @@
     </div>
   </main>
 
-  <script>
+   <script>
     document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+
+    // Auth guard
+    if (!localStorage.getItem('invbit_user')) {
+      window.location.href = '/login';
+    }
 
     async function loadStats() {
       try {

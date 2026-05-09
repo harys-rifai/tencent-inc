@@ -365,10 +365,16 @@ html, body {
 .status-active::before   { content:''; width:5px; height:5px; border-radius:50%; background:var(--green); }
 .status-inactive::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--text-dim); }
 
-.role-badge { padding: .2rem .6rem; border-radius: 20px; font-family: 'JetBrains Mono', monospace; font-size: .65rem; font-weight: 600; }
-.role-admin { background: rgba(168,85,247,.12); color: var(--purple); border: 1px solid rgba(168,85,247,.2); }
-.role-dba   { background: rgba(0,212,255,.1);  color: var(--cyan);   border: 1px solid rgba(0,212,255,.2); }
-.role-user  { background: rgba(100,116,139,.1);color: var(--text-dim);border: 1px solid var(--border); }
+ .role-admin { background: rgba(168,85,247,.12); color: var(--purple); border: 1px solid rgba(168,85,247,.2); }
+ .role-dba   { background: rgba(0,212,255,.1);  color: var(--cyan);   border: 1px solid rgba(0,212,255,.2); }
+ .role-user  { background: rgba(100,116,139,.1);color: var(--text-dim);border: 1px solid var(--border); }
+ .role-error { background: rgba(255,85,114,.12); color: var(--red); border: 1px solid rgba(255,85,114,.2); }
+ .role-warn  { background: rgba(255,193,7,.12); color: #ffc107; border: 1px solid rgba(255,193,7,.2); }
+ .role-info  { background: rgba(0,212,255,.1); color: var(--cyan); border: 1px solid rgba(0,212,255,.2); }
+ .role-dev   { background: rgba(100,116,139,.1); color: var(--text-dim); border: 1px solid var(--border); }
+ .role-uat   { background: rgba(255,193,7,.12); color: #ffc107; border: 1px solid rgba(255,193,7,.2); }
+ .role-prod  { background: rgba(0,255,136,.12); color: var(--green); border: 1px solid rgba(0,255,136,.2); }
+ .role-other { background: rgba(168,85,247,.1); color: var(--purple); border: 1px solid rgba(168,85,247,.2); }
 
 /* ── FORMS ── */
 .form-group { margin-bottom: 1.1rem; }

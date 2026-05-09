@@ -1,11 +1,16 @@
 const express = require('express');
 const path = require('path');
 const { query } = require('./db');
-const { connectRedis, setCache, getCache, deleteCache } = require('./cache');
+const { connectRedis, setCache, getCache, deleteCache, deleteCachePattern } = require('./cache');
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Serve login page
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
+});
 
 const PORT = process.env.PORT || 3000;
 
@@ -27,6 +32,51 @@ const validateTask = (data) => {
   if (data.priority && !['low','medium','high'].includes(data.priority))
     errors.push('Priority must be low, medium, or high');
   return errors;
+};
+
+// ── CSV export helper ─────────────────────────────────────────────────────────
+const toCSV = (rows) => {
+  if (!rows || rows.length === 0) return '';
+  const headers = Object.keys(rows[0]);
+  const csvRows = [];
+  csvRows.push(headers.join(','));
+  for (const row of rows) {
+    const values = headers.map(header => {
+      const val = row[header];
+      if (val === null || val === undefined) return '';
+      const str = String(val);
+      if (str.includes(',') || str.includes('\n') || str.includes('"')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    });
+    csvRows.push(values.join(','));
+  }
+  return csvRows.join('\n');
+};
+
+// ── Error logging helper ──────────────────────────────────────────────────────
+const logError = async (err, context = {}) => {
+  try {
+    await query(`
+      INSERT INTO invschema.error_logs
+        (level, message, stack, source, route, method, user_id, ip_address, user_agent, metadata)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `, [
+      context.level || 'error',
+      context.message || err.message || String(err),
+      context.stack || (err.stack || null),
+      context.source || 'server',
+      context.route || null,
+      context.method || null,
+      context.user_id || null,
+      context.ip_address || null,
+      context.user_agent || null,
+      context.metadata ? JSON.stringify(context.metadata) : null
+    ]);
+  } catch (logErr) {
+    console.error('Failed to log error:', logErr);
+  }
 };
 
 // ── Pagination helper ────────────────────────────────────────────────────────
@@ -53,66 +103,13 @@ const invCacheKey = (page, limit) => `${INV_CACHE_PREFIX}p${page}_l${limit}`;
 connectRedis().catch(console.error);
 
 // ── DB init ──────────────────────────────────────────────────────────────────
+const { runMigrations } = require('./migrations/runner');
+
 const initDB = async () => {
   try {
-    // Tables
-    await query(`
-      CREATE TABLE IF NOT EXISTS invschema.inventory (
-        id         SERIAL PRIMARY KEY,
-        type       VARCHAR(100),
-        appreff    VARCHAR(100),
-        ip         INET,
-        port       INTEGER,
-        version    VARCHAR(50),
-        active     BOOLEAN DEFAULT TRUE,
-        user_name  VARCHAR(100),
-        password   VARCHAR(100),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    await query(`
-      CREATE TABLE IF NOT EXISTS invschema.users (
-        id         SERIAL PRIMARY KEY,
-        username   VARCHAR(100) UNIQUE,
-        password   VARCHAR(100),
-        role       VARCHAR(20) DEFAULT 'user',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    await query(`
-      CREATE TABLE IF NOT EXISTS invschema.tasks (
-        id          SERIAL PRIMARY KEY,
-        title       VARCHAR(255) NOT NULL,
-        description TEXT,
-        status      VARCHAR(20)  DEFAULT 'todo',
-        priority    VARCHAR(20)  DEFAULT 'medium',
-        due_date    DATE,
-        assigned_to VARCHAR(100),
-        created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Indexes — inventory
-    await query(`CREATE INDEX IF NOT EXISTS idx_inv_ip      ON invschema.inventory(ip)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_inv_type    ON invschema.inventory(type)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_inv_active  ON invschema.inventory(active)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_inv_appreff ON invschema.inventory(appreff)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_inv_created ON invschema.inventory(created_at DESC)`);
-
-    // Indexes — tasks
-    await query(`CREATE INDEX IF NOT EXISTS idx_tasks_status   ON invschema.tasks(status)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_tasks_priority ON invschema.tasks(priority)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_tasks_due      ON invschema.tasks(due_date)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_tasks_created  ON invschema.tasks(created_at DESC)`);
-
-    // Indexes — users
-    await query(`CREATE INDEX IF NOT EXISTS idx_users_username ON invschema.users(username)`);
-
-    console.log('Database initialized with indexes');
+    // Run migrations instead of hardcoded table creation
+    await runMigrations();
+    console.log('Database initialized with migrations');
   } catch (err) {
     console.error('Error initializing database:', err);
   }
@@ -144,10 +141,17 @@ app.get('/inventory/stats', async (req, res) => {
     };
     await setCache('inv_stats', stats, 120);
     res.json(stats);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+   } catch (err) {
+     console.error(err);
+     await logError(err, {
+       source: 'inventory',
+       route: req.path,
+       method: req.method,
+       ip_address: req.ip || req.connection.remoteAddress,
+       user_agent: req.get('User-Agent')
+     });
+     res.status(500).json({ error: 'Internal server error' });
+   }
 });
 
 // GET /inventory?page&limit
@@ -167,10 +171,17 @@ app.get('/inventory', async (req, res) => {
     const result = paginatedResult(dataRes.rows, countRes.rows[0].count, page, limit);
     await setCache(cacheKey, result, 300);
     res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+   } catch (err) {
+     console.error(err);
+     await logError(err, {
+       source: 'inventory',
+       route: req.path,
+       method: req.method,
+       ip_address: req.ip || req.connection.remoteAddress,
+       user_agent: req.get('User-Agent')
+     });
+     res.status(500).json({ error: 'Internal server error' });
+   }
 });
 
 // GET /inventory/:id
@@ -185,42 +196,60 @@ app.get('/inventory/:id', async (req, res) => {
 
     await setCache(`inv_item_${id}`, result.rows[0], 300);
     res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+   } catch (err) {
+     console.error(err);
+     await logError(err, {
+       source: 'inventory',
+       route: req.path,
+       method: req.method,
+       ip_address: req.ip || req.connection.remoteAddress,
+       user_agent: req.get('User-Agent')
+     });
+     res.status(500).json({ error: 'Internal server error' });
+   }
 });
 
 // POST /inventory
 app.post('/inventory', async (req, res) => {
   try {
-    const { type, appreff, ip, port, version, active, user_name, password } = req.body;
+    const { type, appreff, ip, port, version, active, stage, note, user_name, password } = req.body;
     const errors = validateInventory(req.body);
     if (errors.length > 0) return res.status(400).json({ errors });
 
     const result = await query(
-      'INSERT INTO invschema.inventory (type,appreff,ip,port,version,active,user_name,password) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
-      [type, appreff, ip, port, version, active, user_name, password]
+      'INSERT INTO invschema.inventory (type,appreff,ip,port,version,active,stage,note,user_name,password) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *',
+      [type, appreff, ip, port, version, active, stage || 'dev', note || null, user_name, password]
     );
     await deleteCache('inv_stats');
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+    await logError(err, {
+      source: 'inventory',
+      route: req.path,
+      method: req.method,
+      ip_address: req.ip || req.connection.remoteAddress,
+      user_agent: req.get('User-Agent')
+    });
+     res.status(500).json({ error: 'Internal server error' });
+   }
+ });
 
-// PUT /inventory/:id
+ // PUT /inventory/:id
 app.put('/inventory/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { type, appreff, ip, port, version, active, user_name, password } = req.body;
+    const { type, appreff, ip, port, version, active, stage, note, user_name, password } = req.body;
     const errors = validateInventory(req.body);
     if (errors.length > 0) return res.status(400).json({ errors });
 
     const result = await query(
-      'UPDATE invschema.inventory SET type=$1,appreff=$2,ip=$3,port=$4,version=$5,active=$6,user_name=$7,password=$8,updated_at=NOW() WHERE id=$9 RETURNING *',
-      [type, appreff, ip, port, version, active, user_name, password, id]
+      `UPDATE invschema.inventory SET
+        type=$1, appreff=$2, ip=$3, port=$4, version=$5,
+        active=$6, stage=$7, note=$8, user_name=$9, password=$10,
+        updated_at=NOW()
+       WHERE id=$11 RETURNING *`,
+      [type, appreff, ip, port, version, active, stage || 'dev', note || null, user_name, password, id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Item not found' });
 
@@ -229,11 +258,18 @@ app.put('/inventory/:id', async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
+    await logError(err, {
+      source: 'inventory',
+      route: req.path,
+      method: req.method,
+      ip_address: req.ip || req.connection.remoteAddress,
+      user_agent: req.get('User-Agent')
+    });
     res.status(500).json({ error: 'Internal server error' });
-  }
-});
+   }
+ });
 
-// DELETE /inventory/:id
+ // DELETE /inventory/:id
 app.delete('/inventory/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -243,10 +279,17 @@ app.delete('/inventory/:id', async (req, res) => {
     await deleteCache(`inv_item_${id}`);
     await deleteCache('inv_stats');
     res.json({ message: 'Item deleted successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+   } catch (err) {
+     console.error(err);
+     await logError(err, {
+       source: 'inventory',
+       route: req.path,
+       method: req.method,
+       ip_address: req.ip || req.connection.remoteAddress,
+       user_agent: req.get('User-Agent')
+     });
+     res.status(500).json({ error: 'Internal server error' });
+   }
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -284,10 +327,17 @@ app.get('/tasks', async (req, res) => {
     const result = paginatedResult(dataRes.rows, countRes.rows[0].count, page, limit);
     await setCache(cacheKey, result, 60);
     res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+   } catch (err) {
+     console.error(err);
+     await logError(err, {
+       source: 'inventory',
+       route: req.path,
+       method: req.method,
+       ip_address: req.ip || req.connection.remoteAddress,
+       user_agent: req.get('User-Agent')
+     });
+     res.status(500).json({ error: 'Internal server error' });
+   }
 });
 
 // GET /tasks/board  — all tasks grouped by status (no pagination, for kanban)
@@ -301,10 +351,17 @@ app.get('/tasks/board', async (req, res) => {
     r.rows.forEach(t => { if (board[t.status]) board[t.status].push(t); });
     await setCache('tasks_board', board, 60);
     res.json(board);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+   } catch (err) {
+     console.error(err);
+     await logError(err, {
+       source: 'inventory',
+       route: req.path,
+       method: req.method,
+       ip_address: req.ip || req.connection.remoteAddress,
+       user_agent: req.get('User-Agent')
+     });
+     res.status(500).json({ error: 'Internal server error' });
+   }
 });
 
 // GET /tasks/timeline  — all tasks with due_date, ordered by due_date
@@ -319,10 +376,17 @@ app.get('/tasks/timeline', async (req, res) => {
     `);
     await setCache('tasks_timeline', r.rows, 60);
     res.json(r.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+   } catch (err) {
+     console.error(err);
+     await logError(err, {
+       source: 'inventory',
+       route: req.path,
+       method: req.method,
+       ip_address: req.ip || req.connection.remoteAddress,
+       user_agent: req.get('User-Agent')
+     });
+     res.status(500).json({ error: 'Internal server error' });
+   }
 });
 
 // POST /tasks
@@ -340,10 +404,17 @@ app.post('/tasks', async (req, res) => {
     await deleteCache('tasks_board');
     await deleteCache('tasks_timeline');
     res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+   } catch (err) {
+     console.error(err);
+     await logError(err, {
+       source: 'inventory',
+       route: req.path,
+       method: req.method,
+       ip_address: req.ip || req.connection.remoteAddress,
+       user_agent: req.get('User-Agent')
+     });
+     res.status(500).json({ error: 'Internal server error' });
+   }
 });
 
 // PUT /tasks/:id
@@ -365,10 +436,17 @@ app.put('/tasks/:id', async (req, res) => {
     await deleteCache('tasks_board');
     await deleteCache('tasks_timeline');
     res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+   } catch (err) {
+     console.error(err);
+     await logError(err, {
+       source: 'inventory',
+       route: req.path,
+       method: req.method,
+       ip_address: req.ip || req.connection.remoteAddress,
+       user_agent: req.get('User-Agent')
+     });
+     res.status(500).json({ error: 'Internal server error' });
+   }
 });
 
 // DELETE /tasks/:id
@@ -381,10 +459,17 @@ app.delete('/tasks/:id', async (req, res) => {
     await deleteCache('tasks_board');
     await deleteCache('tasks_timeline');
     res.json({ message: 'Task deleted' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+   } catch (err) {
+     console.error(err);
+     await logError(err, {
+       source: 'inventory',
+       route: req.path,
+       method: req.method,
+       ip_address: req.ip || req.connection.remoteAddress,
+       user_agent: req.get('User-Agent')
+     });
+     res.status(500).json({ error: 'Internal server error' });
+   }
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -407,10 +492,17 @@ app.get('/users', async (req, res) => {
     const result = paginatedResult(dataRes.rows, countRes.rows[0].count, page, limit);
     await setCache(cacheKey, result, 300);
     res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+   } catch (err) {
+     console.error(err);
+     await logError(err, {
+       source: 'inventory',
+       route: req.path,
+       method: req.method,
+       ip_address: req.ip || req.connection.remoteAddress,
+       user_agent: req.get('User-Agent')
+     });
+     res.status(500).json({ error: 'Internal server error' });
+   }
 });
 
 app.post('/users', async (req, res) => {
@@ -420,25 +512,279 @@ app.post('/users', async (req, res) => {
       'INSERT INTO invschema.users (username,password,role) VALUES ($1,$2,$3) RETURNING id,username,role,created_at',
       [username, password, role || 'user']
     );
+    await deleteCachePattern('users_*');
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
-  }
-});
+   }
+ });
 
-app.delete('/users/:id', async (req, res) => {
+ app.delete('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
     await query('DELETE FROM invschema.users WHERE id=$1', [id]);
+    await deleteCachePattern('users_*');
     res.json({ message: 'User deleted' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
+   }
+ });
+
+ // ════════════════════════════════════════════════════════════════════════════
+//  CSV EXPORT ROUTES
+// ════════════════════════════════════════════════════════════════════════════
+
+// GET /export/:table — export any table to CSV
+app.get('/export/:table', async (req, res) => {
+  try {
+    const { table } = req.params;
+    const allowedTables = ['inventory', 'tasks', 'users', 'menu_items', 'error_logs'];
+    if (!allowedTables.includes(table)) {
+      return res.status(400).json({ error: 'Invalid table name' });
+    }
+
+    // Special handling for inventory to avoid schema_migrations conflicts
+    let queryText;
+    if (table === 'inventory') {
+      queryText = 'SELECT * FROM invschema.inventory ORDER BY id';
+    } else if (table === 'tasks') {
+      queryText = 'SELECT * FROM invschema.tasks ORDER BY id';
+    } else if (table === 'users') {
+      queryText = 'SELECT * FROM invschema.users ORDER BY id';
+    } else if (table === 'menu_items') {
+      queryText = 'SELECT * FROM invschema.menu_items ORDER BY order_index, id';
+    } else if (table === 'error_logs') {
+      queryText = 'SELECT * FROM invschema.error_logs ORDER BY created_at DESC';
+    } else {
+      queryText = `SELECT * FROM invschema.${table} ORDER BY id`;
+    }
+
+    const result = await query(queryText);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'No data found' });
+    }
+
+    const csv = toCSV(result.rows);
+    const fileName = `${table}_export_${new Date().toISOString().split('T')[0]}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(csv);
+  } catch (err) {
+    console.error('Error exporting CSV:', err);
+    await logError(err, {
+      source: 'export',
+      route: req.path,
+      method: req.method,
+      ip_address: req.ip || req.connection.remoteAddress
+    });
+    res.status(500).json({ error: 'Export failed' });
   }
 });
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+//  MENU ROUTES
+// ════════════════════════════════════════════════════════════════════════════
+
+// GET /menu — return active menu items for sidebar
+app.get('/menu', async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT id, label, icon, href, parent_id
+      FROM invschema.menu_items
+      WHERE active = true
+      ORDER BY order_index, id
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching menu:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /admin/menu — full menu data (for admin editing)
+app.get('/admin/menu', async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT * FROM invschema.menu_items
+      ORDER BY order_index, id
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching menu:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /admin/menu — create menu item
+app.post('/admin/menu', async (req, res) => {
+  try {
+    const { label, icon, href, order_index, active, parent_id } = req.body;
+    const result = await query(`
+      INSERT INTO invschema.menu_items (label, icon, href, order_index, active, parent_id)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `, [label, icon, href, order_index || 0, active !== false, parent_id]);
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating menu item:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT /admin/menu/:id — update menu item
+app.put('/admin/menu/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { label, icon, href, order_index, active, parent_id } = req.body;
+    const result = await query(`
+      UPDATE invschema.menu_items
+      SET label = $1, icon = $2, href = $3, order_index = $4, active = $5, parent_id = $6, updated_at = NOW()
+      WHERE id = $7
+      RETURNING *
+    `, [label, icon, href, order_index, active, parent_id, id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Menu item not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating menu item:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /admin/menu/:id — delete menu item
+app.delete('/admin/menu/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await query('DELETE FROM invschema.menu_items WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Menu item not found' });
+    res.json({ message: 'Menu item deleted' });
+  } catch (err) {
+    console.error('Error deleting menu item:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  ERROR LOG ROUTES
+// ════════════════════════════════════════════════════════════════════════════
+
+// POST /errors — log an error
+app.post('/errors', async (req, res) => {
+  try {
+    const { level, message, stack, source, route, method, user_id, ip_address, user_agent, metadata } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const result = await query(`
+      INSERT INTO invschema.error_logs
+        (level, message, stack, source, route, method, user_id, ip_address, user_agent, metadata)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *
+    `, [
+      level || 'error',
+      message,
+      stack || null,
+      source || null,
+      route || null,
+      method || null,
+      user_id || null,
+      ip_address || null,
+      user_agent || null,
+      metadata ? JSON.stringify(metadata) : null
+    ]);
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error logging error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /errors — retrieve error logs (with optional filters)
+app.get('/errors', async (req, res) => {
+  try {
+    const { level, source, route, limit = 100, offset = 0 } = req.query;
+
+    const conditions = [];
+    const params = [];
+    let paramCount = 0;
+
+    if (level) {
+      paramCount++;
+      conditions.push(`level = $${paramCount}`);
+      params.push(level);
+    }
+    if (source) {
+      paramCount++;
+      conditions.push(`source = $${paramCount}`);
+      params.push(source);
+    }
+    if (route) {
+      paramCount++;
+      conditions.push(`route = $${paramCount}`);
+      params.push(route);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const [countRes, dataRes] = await Promise.all([
+      query(`SELECT COUNT(*) FROM invschema.error_logs ${where}`, params),
+      query(
+        `SELECT id, level, message, stack, source, route, method, user_id, ip_address, created_at
+         FROM invschema.error_logs ${where}
+         ORDER BY created_at DESC
+         LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`,
+        [...params, parseInt(limit), parseInt(offset)]
+      )
+    ]);
+
+    res.json({
+      data: dataRes.rows,
+      total: parseInt(countRes.rows[0].count),
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+  } catch (err) {
+    console.error('Error fetching error logs:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /errors/:id — get single error log
+app.get('/errors/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await query('SELECT * FROM invschema.error_logs WHERE id = $1', [id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Error log not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error fetching error log:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /errors/:id — delete an error log
+app.delete('/errors/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await query('DELETE FROM invschema.error_logs WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Error log not found' });
+    res.json({ message: 'Error log deleted' });
+  } catch (err) {
+    console.error('Error deleting error log:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  AUTH ROUTES
+// ════════════════════════════════════════════════════════════════════════════
+
 app.post('/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -448,10 +794,17 @@ app.post('/auth/login', async (req, res) => {
     if (result.rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
     const user = result.rows[0];
     res.json({ user: { id: user.id, username: user.username, role: user.role } });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+   } catch (err) {
+     console.error(err);
+     await logError(err, {
+       source: 'inventory',
+       route: req.path,
+       method: req.method,
+       ip_address: req.ip || req.connection.remoteAddress,
+       user_agent: req.get('User-Agent')
+     });
+     res.status(500).json({ error: 'Internal server error' });
+   }
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -36,24 +36,25 @@
       <div class="panel">
         <div class="panel-header">
           <span class="panel-title">Inventory Items <span id="itemCount" style="color:var(--text-dim);font-weight:400"></span></span>
-          <div style="display:flex;gap:.5rem;align-items:center">
-            <div class="search-box" style="width:200px">
-              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input type="text" id="filterInput" placeholder="Filter…" oninput="clientFilter()" />
-            </div>
-            <select class="filter-select" id="limitSel" onchange="loadInventory(1)">
-              <option value="10">10/pg</option>
-              <option value="20" selected>20/pg</option>
-              <option value="50">50/pg</option>
-            </select>
-            <button class="btn-sm" onclick="loadInventory(currentPage)">↻</button>
-          </div>
+           <div style="display:flex;gap:.5rem;align-items:center">
+             <div class="search-box" style="width:200px">
+               <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+               <input type="text" id="filterInput" placeholder="Filter…" oninput="clientFilter()" />
+             </div>
+             <select class="filter-select" id="limitSel" onchange="loadInventory(1)">
+               <option value="10">10/pg</option>
+               <option value="20" selected>20/pg</option>
+               <option value="50">50/pg</option>
+             </select>
+             <button class="btn-sm" onclick="loadInventory(currentPage)">↻</button>
+             <button class="btn-primary btn-sm" onclick="exportTable('inventory')">Export CSV</button>
+           </div>
         </div>
         <div class="table-wrapper">
           <table class="data-table">
-            <thead>
-              <tr><th>#</th><th>Type</th><th>App Ref</th><th>IP Address</th><th>Port</th><th>Version</th><th>Status</th><th>Actions</th></tr>
-            </thead>
+             <thead>
+               <tr><th>#</th><th>Type</th><th>App Ref</th><th>IP</th><th>Port</th><th>Stage</th><th>Status</th><th>Actions</th></tr>
+             </thead>
             <tbody id="tableBody">
               <tr><td colspan="8" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
             </tbody>
@@ -86,10 +87,21 @@
           <select id="fActive"><option value="true">Active</option><option value="false">Inactive</option></select>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label>Username</label><input type="text" id="fUser" placeholder="db_user" /></div>
-        <div class="form-group"><label>Password</label><input type="password" id="fPass" placeholder="••••••••" /></div>
-      </div>
+       <div class="form-row">
+         <div class="form-group"><label>Username</label><input type="text" id="fUser" placeholder="db_user" /></div>
+         <div class="form-group"><label>Password</label><input type="password" id="fPass" placeholder="••••••••" /></div>
+       </div>
+       <div class="form-row">
+         <div class="form-group"><label>Stage</label>
+           <select id="fStage">
+             <option value="dev">Dev</option>
+             <option value="uat">UAT</option>
+             <option value="prod">Prod</option>
+             <option value="other">Other</option>
+           </select>
+         </div>
+         <div class="form-group" style="flex:1"><label>Note</label><input type="text" id="fNote" placeholder="Optional note…" /></div>
+       </div>
       <div class="form-error" id="modalError"></div>
       <div class="modal-actions">
         <button class="btn-ghost" onclick="closeModal()">Cancel</button>
@@ -107,6 +119,11 @@
     document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('addBtn').onclick = () => openModal();
     document.getElementById('modalOverlay').onclick = e => { if (e.target === e.currentTarget) closeModal(); };
+
+    // Auth guard
+    if (!localStorage.getItem('invbit_user')) {
+      window.location.href = '/login';
+    }
 
     function showToast(msg, type = 'success') {
       const t = document.getElementById('toast');
@@ -130,35 +147,36 @@
       el.innerHTML = h;
     }
 
-    function renderRows(data) {
-      if (!data || data.length === 0) {
-        document.getElementById('tableBody').innerHTML = '<tr><td colspan="8"><div class="empty-state"><p>No items found</p></div></td></tr>';
-        return;
-      }
-      document.getElementById('tableBody').innerHTML = data.map(item => `
-        <tr>
-          <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${item.id}</td>
-          <td style="font-weight:500">${item.type || '—'}</td>
-          <td style="color:var(--cyan);font-family:'JetBrains Mono',monospace;font-size:.75rem">${item.appreff || '—'}</td>
-          <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem">${item.ip || '—'}</td>
-          <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem">${item.port || '—'}</td>
-          <td>${item.version || '—'}</td>
-          <td><span class="${item.active ? 'status-active':'status-inactive'}">${item.active ? 'Active':'Inactive'}</span></td>
-          <td class="td-actions">
-            <button class="btn-sm" onclick='openModal(${JSON.stringify(item)})'>Edit</button>
-            <button class="btn-danger" onclick="deleteItem(${item.id})">Delete</button>
-          </td>
-        </tr>`).join('');
+     function renderRows(data) {
+       if (!data || data.length === 0) {
+         document.getElementById('tableBody').innerHTML = '<tr><td colspan="8"><div class="empty-state"><p>No items found</p></div></td></tr>';
+         return;
+       }
+       document.getElementById('tableBody').innerHTML = data.map(item => `
+         <tr>
+           <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${item.id}</td>
+           <td style="font-weight:500">${item.type || '—'}</td>
+           <td style="color:var(--cyan);font-family:'JetBrains Mono',monospace;font-size:.75rem">${item.appreff || '—'}</td>
+           <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem">${item.ip || '—'}</td>
+           <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem">${item.port || '—'}</td>
+           <td><span class="role-badge role-${item.stage || 'dev'}">${item.stage || 'dev'}</span></td>
+           <td><span class="${item.active ? 'status-active':'status-inactive'}">${item.active ? 'Active':'Inactive'}</span></td>
+           <td class="td-actions">
+             <button class="btn-sm" onclick='openModal(${JSON.stringify(item)})'>Edit</button>
+             <button class="btn-danger" onclick="deleteItem(${item.id})">Delete</button>
+           </td>
+         </tr>`).join('');
     }
 
-    function clientFilter() {
-      const q = document.getElementById('filterInput').value.toLowerCase();
-      if (!q) { renderRows(pageData); return; }
-      renderRows(pageData.filter(i =>
-        (i.ip||'').includes(q) || (i.type||'').toLowerCase().includes(q) ||
-        (i.appreff||'').toLowerCase().includes(q) || (i.version||'').includes(q)
-      ));
-    }
+     function clientFilter() {
+       const q = document.getElementById('filterInput').value.toLowerCase();
+       if (!q) { renderRows(pageData); return; }
+       renderRows(pageData.filter(i =>
+         (i.ip||'').includes(q) || (i.type||'').toLowerCase().includes(q) ||
+         (i.appreff||'').toLowerCase().includes(q) || (i.stage||'').toLowerCase().includes(q) ||
+         (i.note||'').toLowerCase().includes(q)
+       ));
+     }
 
     async function loadInventory(page = 1) {
       currentPage = page;
@@ -186,6 +204,8 @@
       document.getElementById('fPort').value    = item?.port    || '';
       document.getElementById('fVersion').value = item?.version || '';
       document.getElementById('fActive').value  = item ? String(item.active) : 'true';
+      document.getElementById('fStage').value   = item?.stage   || 'dev';
+      document.getElementById('fNote').value    = item?.note    || '';
       document.getElementById('fUser').value    = item?.user_name || '';
       document.getElementById('fPass').value    = '';
       document.getElementById('modalError').textContent = '';
@@ -203,6 +223,8 @@
         port:      parseInt(document.getElementById('fPort').value) || null,
         version:   document.getElementById('fVersion').value,
         active:    document.getElementById('fActive').value === 'true',
+        stage:     document.getElementById('fStage').value,
+        note:      document.getElementById('fNote').value || null,
         user_name: document.getElementById('fUser').value,
         password:  document.getElementById('fPass').value,
       };
@@ -218,16 +240,36 @@
       } catch { document.getElementById('modalError').textContent = 'Network error'; }
     }
 
-    async function deleteItem(id) {
-      if (!confirm('Delete this item?')) return;
-      try {
-        await fetch(`/inventory/${id}`, { method: 'DELETE' });
-        showToast('Item deleted');
-        loadInventory(currentPage);
-      } catch { showToast('Delete failed', 'error'); }
-    }
+     async function deleteItem(id) {
+       if (!confirm('Delete this item?')) return;
+       try {
+         await fetch(`/inventory/${id}`, { method: 'DELETE' });
+         showToast('Item deleted');
+         loadInventory(currentPage);
+       } catch { showToast('Delete failed', 'error'); }
+     }
 
-    loadInventory(1);
+     async function exportTable(table) {
+       try {
+         const res = await fetch(`/export/${table}`);
+         if (!res.ok) throw new Error('Export failed');
+         const csv = await res.text();
+         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+         const url = URL.createObjectURL(blob);
+         const a = document.createElement('a');
+         a.href = url;
+         a.download = res.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
+         document.body.appendChild(a);
+         a.click();
+         document.body.removeChild(a);
+         URL.revokeObjectURL(url);
+         showToast('Export started');
+       } catch (err) {
+         showToast('Export failed', 'error');
+       }
+     }
+
+     loadInventory(1);
   </script>
 </body>
 </html>

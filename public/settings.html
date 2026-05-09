@@ -72,14 +72,15 @@
       <div class="panel section-gap">
         <div class="panel-header">
           <span class="panel-title">User Management</span>
-          <div style="display:flex;gap:.5rem;align-items:center">
-            <select class="filter-select" id="userLimit" onchange="loadUsers(1)">
-              <option value="10" selected>10/pg</option>
-              <option value="20">20/pg</option>
-              <option value="50">50/pg</option>
-            </select>
-            <button class="btn-sm" onclick="loadUsers(1)">↻ Refresh</button>
-          </div>
+           <div style="display:flex;gap:.5rem;align-items:center">
+             <select class="filter-select" id="userLimit" onchange="loadUsers(1)">
+               <option value="10" selected>10/pg</option>
+               <option value="20">20/pg</option>
+               <option value="50">50/pg</option>
+             </select>
+             <button class="btn-sm" onclick="loadUsers(1)">↻ Refresh</button>
+             <button class="btn-primary btn-sm" onclick="exportTable('users')">Export CSV</button>
+           </div>
         </div>
         <div class="table-wrapper">
           <table class="data-table">
@@ -91,15 +92,58 @@
             </tbody>
           </table>
         </div>
-        <div class="pagination" id="userPager"></div>
-      </div>
-    </div>
-  </main>
+         <div class="pagination" id="userPager"></div>
+       </div> <!-- close User Management panel -->
+       <div class="panel section-gap">
+         <div class="panel-header">
+           <span class="panel-title">Error Logs</span>
+           <div style="display:flex;gap:.5rem;align-items:center">
+             <button class="btn-primary btn-sm" onclick="exportTable('error_logs')">Export CSV</button>
+           </div>
+         </div>
+         <div class="table-wrapper">
+           <table class="data-table">
+             <thead>
+               <tr><th>#</th><th>Level</th><th>Message</th><th>Source</th><th>Route</th><th>Created</th></tr>
+             </thead>
+             <tbody id="errorsBody">
+               <tr><td colspan="6" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
+             </tbody>
+           </table>
+         </div>
+       </div>
+
+       <!-- Menu Items -->
+       <div class="panel section-gap">
+         <div class="panel-header">
+           <span class="panel-title">Menu Items</span>
+           <div style="display:flex;gap:.5rem;align-items:center">
+             <button class="btn-primary btn-sm" onclick="exportTable('menu_items')">Export CSV</button>
+           </div>
+         </div>
+         <div class="table-wrapper">
+           <table class="data-table">
+             <thead>
+               <tr><th>#</th><th>Label</th><th>Icon</th><th>Href</th><th>Order</th><th>Active</th></tr>
+             </thead>
+             <tbody id="menuBody">
+               <tr><td colspan="6" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
+             </tbody>
+           </table>
+         </div>
+       </div>
+     </div>
+   </main>
 
   <div class="toast" id="toast"></div>
 
-  <script>
+   <script>
     document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+
+    // Auth guard
+    if (!localStorage.getItem('invbit_user')) {
+      window.location.href = '/login';
+    }
 
     function showToast(msg, type = 'success') {
       const t = document.getElementById('toast');
@@ -131,11 +175,77 @@
 
     async function deleteUser(id) {
       if (!confirm('Delete user ' + id + '?')) return;
-      showToast('User deleted');
-      loadUsers();
+      try {
+        const res = await fetch(`/users/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Delete failed');
+        showToast('User deleted');
+        loadUsers();
+      } catch {
+        showToast('Delete failed', 'error');
+      }
     }
 
-    async function loadUsers(page = 1) {
+     async function exportTable(table) {
+       try {
+         const res = await fetch(`/export/${table}`);
+         if (!res.ok) throw new Error('Export failed');
+         const csv = await res.text();
+         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+         const url = URL.createObjectURL(blob);
+         const a = document.createElement('a');
+         a.href = url;
+         a.download = res.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
+         document.body.appendChild(a);
+         a.click();
+         document.body.removeChild(a);
+         URL.revokeObjectURL(url);
+         showToast('Export started');
+       } catch (err) {
+         showToast('Export failed', 'error');
+       }
+     }
+
+     // ── Error Logs ─────────────────────────────────────────────────────────────
+     async function loadErrors() {
+       try {
+         const res = await fetch('/errors?limit=50');
+         const { data: errors } = await res.json();
+         document.getElementById('errorsBody').innerHTML = errors.map(e => `
+           <tr>
+             <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${e.id}</td>
+             <td><span class="role-badge role-${e.level}">${e.level}</span></td>
+             <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.message}">${e.message}</td>
+             <td>${e.source || '—'}</td>
+             <td style="color:var(--text-dim);font-size:.75rem;font-family:'JetBrains Mono',monospace">${e.route || '—'}</td>
+             <td style="color:var(--text-dim);font-size:.75rem">${e.created_at ? new Date(e.created_at).toLocaleString() : '—'}</td>
+           </tr>
+         `).join('');
+       } catch {
+         document.getElementById('errorsBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red)">Error loading logs</td></tr>';
+       }
+     }
+
+     // ── Menu Items ─────────────────────────────────────────────────────────────
+     async function loadMenu() {
+       try {
+         const res = await fetch('/admin/menu');
+         const menu = await res.json();
+         document.getElementById('menuBody').innerHTML = menu.map(m => `
+           <tr>
+             <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${m.id}</td>
+             <td style="font-weight:500">${m.label}</td>
+             <td style="color:var(--accent);font-size:1.2rem">${m.icon || '—'}</td>
+             <td style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--text-dim)">${m.href}</td>
+             <td>${m.order_index}</td>
+             <td>${m.active ? '✓' : '✗'}</td>
+           </tr>
+         `).join('');
+       } catch {
+         document.getElementById('menuBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red)">Error loading menu</td></tr>';
+       }
+     }
+
+     async function loadUsers(page = 1) {
       const limit = document.getElementById('userLimit').value;
       document.getElementById('usersBody').innerHTML = '<tr><td colspan="5" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
       try {
@@ -172,8 +282,10 @@
         document.getElementById('usersBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--red)">Error loading users</td></tr>';
       }
     }
-    loadUsers();
-  </script>
+     loadUsers();
+     loadErrors();
+     loadMenu();
+   </script>
 
   <style>
     @media (max-width: 900px) {

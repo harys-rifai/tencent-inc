@@ -32,9 +32,18 @@ const deleteCache = async (key) => {
   await redisClient.del(key);
 };
 
+const deleteCachePattern = async (pattern) => {
+  if (!redisClient) await connectRedis();
+  const keys = await redisClient.keys(pattern);
+  if (keys.length) {
+    await redisClient.del(keys);
+  }
+};
+
 module.exports = {
   connectRedis,
   setCache,
   getCache,
-  deleteCache
+  deleteCache,
+  deleteCachePattern
 };

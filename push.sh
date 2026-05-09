@@ -1,8 +1,21 @@
 #!/bin/bash
-# Clear any stale GitHub credentials
-cmdkey /delete:git:https://github.com 2>/dev/null || true
-git config --global credential.helper manager-core
+# Push script - uses stored GitHub credentials
+# Ensure you've run ./setup-github.sh first to configure your credentials
 
-git remote add origin https://github.com/harys-rifai/tencent-inc.git 2>/dev/null || git remote set-url origin https://github.com/harys-rifai/tencent-inc.git
+set -e
+
+echo "=== Pushing to GitHub ==="
+
+# Ensure we're on main branch
 git branch -M main
+
+# Add all changes
+git add .
+
+# Commit with timestamp
+git commit -m "Update: $(date '+%Y-%m-%d %H:%M:%S')" || echo "Nothing to commit"
+
+# Push to origin
 git push -u origin main
+
+echo "✓ Push completed successfully!"

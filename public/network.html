@@ -83,6 +83,11 @@
     document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('apiBase').textContent = window.location.origin;
 
+    // Auth guard
+    if (!localStorage.getItem('invbit_user')) {
+      window.location.href = '/login';
+    }
+
     async function checkHealth() {
       document.getElementById('lastChecked').textContent = new Date().toLocaleTimeString();
       try {

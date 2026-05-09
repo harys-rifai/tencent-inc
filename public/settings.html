@@ -14,6 +14,7 @@
       <a href="index.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Overview</a>
       <a href="inventory.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></span>Inventory</a>
       <a href="network.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M20.49 3.51a14 14 0 0 1 0 19.8M3.51 20.49a14 14 0 0 1 0-19.8"/></svg></span>Network</a>
+      <a href="tasks.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Tasks</a>
       <div class="nav-section-label" style="margin-top:1rem">System</div>
       <a href="search.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>Search</a>
       <a href="settings.html" class="nav-item active"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</a>
@@ -71,7 +72,14 @@
       <div class="panel section-gap">
         <div class="panel-header">
           <span class="panel-title">User Management</span>
-          <button class="btn-sm" onclick="loadUsers()">↻ Refresh</button>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <select class="filter-select" id="userLimit" onchange="loadUsers(1)">
+              <option value="10" selected>10/pg</option>
+              <option value="20">20/pg</option>
+              <option value="50">50/pg</option>
+            </select>
+            <button class="btn-sm" onclick="loadUsers(1)">↻ Refresh</button>
+          </div>
         </div>
         <div class="table-wrapper">
           <table class="data-table">
@@ -83,6 +91,7 @@
             </tbody>
           </table>
         </div>
+        <div class="pagination" id="userPager"></div>
       </div>
     </div>
   </main>
@@ -126,12 +135,17 @@
       loadUsers();
     }
 
-    async function loadUsers() {
+    async function loadUsers(page = 1) {
+      const limit = document.getElementById('userLimit').value;
       document.getElementById('usersBody').innerHTML = '<tr><td colspan="5" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
       try {
-        const res = await fetch('/users');
-        const users = await res.json();
-        if (users.length === 0) { document.getElementById('usersBody').innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>No users found</p></div></td></tr>'; return; }
+        const res = await fetch(`/users?page=${page}&limit=${limit}`);
+        const { data: users, pages } = await res.json();
+        if (!users || users.length === 0) {
+          document.getElementById('usersBody').innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>No users found</p></div></td></tr>';
+          document.getElementById('userPager').innerHTML = '';
+          return;
+        }
         document.getElementById('usersBody').innerHTML = users.map(u => `
           <tr>
             <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${u.id}</td>
@@ -142,6 +156,18 @@
               <button class="btn-danger" onclick="deleteUser(${u.id})">Delete</button>
             </td>
           </tr>`).join('');
+        // Pager
+        const el = document.getElementById('userPager');
+        if (pages <= 1) { el.innerHTML = ''; return; }
+        let h = `<button class="page-btn" onclick="loadUsers(${page-1})" ${page<=1?'disabled':''}>‹</button>`;
+        for (let i = 1; i <= pages; i++) {
+          if (i === 1 || i === pages || (i >= page-2 && i <= page+2))
+            h += `<button class="page-btn ${i===page?'active':''}" onclick="loadUsers(${i})">${i}</button>`;
+          else if (i === page-3 || i === page+3) h += '<span class="page-ellipsis">…</span>';
+        }
+        h += `<button class="page-btn" onclick="loadUsers(${page+1})" ${page>=pages?'disabled':''}>›</button>`;
+        h += `<span class="page-info">Page ${page} of ${pages}</span>`;
+        el.innerHTML = h;
       } catch {
         document.getElementById('usersBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--red)">Error loading users</td></tr>';
       }

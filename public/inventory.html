@@ -8,15 +8,13 @@
 </head>
 <body>
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-icon">⬡</div>
-      <span class="logo-text">INV<span class="accent">BIT</span></span>
-    </div>
+    <div class="sidebar-logo"><div class="logo-icon">⬡</div><span class="logo-text">INV<span class="accent">BIT</span></span></div>
     <nav class="sidebar-nav">
       <div class="nav-section-label">Dashboard</div>
       <a href="index.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Overview</a>
       <a href="inventory.html" class="nav-item active"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></span>Inventory</a>
       <a href="network.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M20.49 3.51a14 14 0 0 1 0 19.8M3.51 20.49a14 14 0 0 1 0-19.8"/></svg></span>Network</a>
+      <a href="tasks.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Tasks</a>
       <div class="nav-section-label" style="margin-top:1rem">System</div>
       <a href="search.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>Search</a>
       <a href="settings.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</a>
@@ -37,27 +35,31 @@
     <div class="page-wrapper">
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">Inventory Items <span id="itemCount" style="color:var(--text-dim);font-weight:400;margin-left:.5rem"></span></span>
+          <span class="panel-title">Inventory Items <span id="itemCount" style="color:var(--text-dim);font-weight:400"></span></span>
           <div style="display:flex;gap:.5rem;align-items:center">
-            <div class="search-box" style="width:220px">
+            <div class="search-box" style="width:200px">
               <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input type="text" id="filterInput" placeholder="Filter items..." oninput="filterTable()" />
+              <input type="text" id="filterInput" placeholder="Filter…" oninput="clientFilter()" />
             </div>
-            <button class="btn-sm" onclick="loadInventory()">↻ Refresh</button>
+            <select class="filter-select" id="limitSel" onchange="loadInventory(1)">
+              <option value="10">10/pg</option>
+              <option value="20" selected>20/pg</option>
+              <option value="50">50/pg</option>
+            </select>
+            <button class="btn-sm" onclick="loadInventory(currentPage)">↻</button>
           </div>
         </div>
         <div class="table-wrapper">
-          <table class="data-table" id="inventoryTable">
+          <table class="data-table">
             <thead>
-              <tr>
-                <th>#</th><th>Type</th><th>App Ref</th><th>IP Address</th><th>Port</th><th>Version</th><th>Status</th><th>Actions</th>
-              </tr>
+              <tr><th>#</th><th>Type</th><th>App Ref</th><th>IP Address</th><th>Port</th><th>Version</th><th>Status</th><th>Actions</th></tr>
             </thead>
             <tbody id="tableBody">
               <tr><td colspan="8" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
             </tbody>
           </table>
         </div>
+        <div class="pagination" id="pager"></div>
       </div>
     </div>
   </main>
@@ -99,10 +101,12 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    let allData = [];
+    let currentPage = 1;
+    let pageData = [];
+
     document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('addBtn').onclick = () => openModal();
-    document.getElementById('modalOverlay').onclick = (e) => { if (e.target === e.currentTarget) closeModal(); };
+    document.getElementById('modalOverlay').onclick = e => { if (e.target === e.currentTarget) closeModal(); };
 
     function showToast(msg, type = 'success') {
       const t = document.getElementById('toast');
@@ -111,13 +115,75 @@
       setTimeout(() => t.className = 'toast', 3000);
     }
 
+    function renderPager(page, pages) {
+      const el = document.getElementById('pager');
+      if (pages <= 1) { el.innerHTML = ''; return; }
+      let h = `<button class="page-btn" onclick="loadInventory(${page-1})" ${page<=1?'disabled':''}>‹</button>`;
+      for (let i = 1; i <= pages; i++) {
+        if (i === 1 || i === pages || (i >= page-2 && i <= page+2))
+          h += `<button class="page-btn ${i===page?'active':''}" onclick="loadInventory(${i})">${i}</button>`;
+        else if (i === page-3 || i === page+3)
+          h += `<span class="page-ellipsis">…</span>`;
+      }
+      h += `<button class="page-btn" onclick="loadInventory(${page+1})" ${page>=pages?'disabled':''}>›</button>`;
+      h += `<span class="page-info">Page ${page} of ${pages} · ${document.getElementById('limitSel').value}/page</span>`;
+      el.innerHTML = h;
+    }
+
+    function renderRows(data) {
+      if (!data || data.length === 0) {
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="8"><div class="empty-state"><p>No items found</p></div></td></tr>';
+        return;
+      }
+      document.getElementById('tableBody').innerHTML = data.map(item => `
+        <tr>
+          <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${item.id}</td>
+          <td style="font-weight:500">${item.type || '—'}</td>
+          <td style="color:var(--cyan);font-family:'JetBrains Mono',monospace;font-size:.75rem">${item.appreff || '—'}</td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem">${item.ip || '—'}</td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem">${item.port || '—'}</td>
+          <td>${item.version || '—'}</td>
+          <td><span class="${item.active ? 'status-active':'status-inactive'}">${item.active ? 'Active':'Inactive'}</span></td>
+          <td class="td-actions">
+            <button class="btn-sm" onclick='openModal(${JSON.stringify(item)})'>Edit</button>
+            <button class="btn-danger" onclick="deleteItem(${item.id})">Delete</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    function clientFilter() {
+      const q = document.getElementById('filterInput').value.toLowerCase();
+      if (!q) { renderRows(pageData); return; }
+      renderRows(pageData.filter(i =>
+        (i.ip||'').includes(q) || (i.type||'').toLowerCase().includes(q) ||
+        (i.appreff||'').toLowerCase().includes(q) || (i.version||'').includes(q)
+      ));
+    }
+
+    async function loadInventory(page = 1) {
+      currentPage = page;
+      const limit = document.getElementById('limitSel').value;
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
+      try {
+        const res = await fetch(`/inventory?page=${page}&limit=${limit}`);
+        const { data, total, pages } = await res.json();
+        pageData = data || [];
+        document.getElementById('itemCount').textContent = `(${total} total)`;
+        document.getElementById('filterInput').value = '';
+        renderRows(pageData);
+        renderPager(page, pages);
+      } catch {
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--red)">Error loading data</td></tr>';
+      }
+    }
+
     function openModal(item = null) {
-      document.getElementById('editId').value = item ? item.id : '';
+      document.getElementById('editId').value    = item ? item.id : '';
       document.getElementById('modalTitle').textContent = item ? 'Edit Inventory Item' : 'Add Inventory Item';
-      document.getElementById('fType').value    = item?.type || '';
+      document.getElementById('fType').value    = item?.type    || '';
       document.getElementById('fAppref').value  = item?.appreff || '';
-      document.getElementById('fIp').value      = item?.ip || '';
-      document.getElementById('fPort').value    = item?.port || '';
+      document.getElementById('fIp').value      = item?.ip      || '';
+      document.getElementById('fPort').value    = item?.port    || '';
       document.getElementById('fVersion').value = item?.version || '';
       document.getElementById('fActive').value  = item ? String(item.active) : 'true';
       document.getElementById('fUser').value    = item?.user_name || '';
@@ -129,7 +195,7 @@
     function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 
     async function saveItem() {
-      const id = document.getElementById('editId').value;
+      const id   = document.getElementById('editId').value;
       const body = {
         type:      document.getElementById('fType').value,
         appreff:   document.getElementById('fAppref').value,
@@ -142,14 +208,13 @@
       };
       try {
         const res = await fetch(id ? `/inventory/${id}` : '/inventory', {
-          method: id ? 'PUT' : 'POST',
+          method:  id ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+          body:    JSON.stringify(body)
         });
-        if (!res.ok) { const e = await res.json(); document.getElementById('modalError').textContent = (e.errors || [e.error]).join(', '); return; }
-        closeModal();
-        showToast(id ? 'Item updated' : 'Item added');
-        loadInventory();
+        if (!res.ok) { const e = await res.json(); document.getElementById('modalError').textContent = (e.errors||[e.error]).join(', '); return; }
+        closeModal(); showToast(id ? 'Item updated' : 'Item added');
+        loadInventory(currentPage);
       } catch { document.getElementById('modalError').textContent = 'Network error'; }
     }
 
@@ -158,52 +223,11 @@
       try {
         await fetch(`/inventory/${id}`, { method: 'DELETE' });
         showToast('Item deleted');
-        loadInventory();
+        loadInventory(currentPage);
       } catch { showToast('Delete failed', 'error'); }
     }
 
-    function filterTable() {
-      const q = document.getElementById('filterInput').value.toLowerCase();
-      const filtered = q ? allData.filter(i =>
-        (i.ip||'').includes(q) || (i.type||'').toLowerCase().includes(q) ||
-        (i.appreff||'').toLowerCase().includes(q) || (i.version||'').includes(q)
-      ) : allData;
-      renderTable(filtered);
-    }
-
-    function renderTable(data) {
-      document.getElementById('itemCount').textContent = `(${data.length})`;
-      if (data.length === 0) {
-        document.getElementById('tableBody').innerHTML = '<tr><td colspan="8"><div class="empty-state"><p>No items found</p></div></td></tr>';
-        return;
-      }
-      document.getElementById('tableBody').innerHTML = data.map(item => `
-        <tr>
-          <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${item.id}</td>
-          <td style="font-weight:500">${item.type || '—'}</td>
-          <td style="color:var(--cyan);font-family:'JetBrains Mono',monospace;font-size:.75rem">${item.appreff || '—'}</td>
-          <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem">${item.ip || '—'}</td>
-          <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem">${item.port || '—'}</td>
-          <td>${item.version || '—'}</td>
-          <td><span class="${item.active ? 'status-active' : 'status-inactive'}">${item.active ? 'Active' : 'Inactive'}</span></td>
-          <td class="td-actions">
-            <button class="btn-sm" onclick='openModal(${JSON.stringify(item)})'>Edit</button>
-            <button class="btn-danger" onclick="deleteItem(${item.id})">Delete</button>
-          </td>
-        </tr>`).join('');
-    }
-
-    async function loadInventory() {
-      document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
-      try {
-        const res = await fetch('/inventory');
-        allData = await res.json();
-        renderTable(allData);
-      } catch {
-        document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--red)">Error loading data</td></tr>';
-      }
-    }
-    loadInventory();
+    loadInventory(1);
   </script>
 </body>
 </html>

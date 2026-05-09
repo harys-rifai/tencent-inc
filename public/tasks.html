@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>INVBIT — Tasks</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="logo-icon">⬡</div><span class="logo-text">INV<span class="accent">BIT</span></span></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Dashboard</div>
+      <a href="index.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Overview</a>
+      <a href="inventory.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></span>Inventory</a>
+      <a href="network.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M20.49 3.51a14 14 0 0 1 0 19.8M3.51 20.49a14 14 0 0 1 0-19.8"/></svg></span>Network</a>
+      <a href="tasks.html" class="nav-item active"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Tasks</a>
+      <div class="nav-section-label" style="margin-top:1rem">System</div>
+      <a href="search.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>Search</a>
+      <a href="settings.html" class="nav-item"><span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</a>
+    </nav>
+    <div class="sidebar-footer"><div class="status-dot online"></div><span>admin</span></div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <button class="menu-toggle" id="menuToggle"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+      <div class="topbar-title">Tasks</div>
+      <div class="topbar-right">
+        <div class="health-badge"><span class="health-dot"></span> SYSTEM ONLINE</div>
+        <button class="btn-primary" onclick="openModal()">+ New Task</button>
+      </div>
+    </header>
+
+    <div class="page-wrapper">
+      <!-- Stats row -->
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.25rem">
+        <div class="stat-card cyan">
+          <div class="stat-icon-wrap">📋</div>
+          <div class="stat-info"><div class="stat-value" id="cntTotal">—</div><div class="stat-label">Total Tasks</div></div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-icon-wrap">🔄</div>
+          <div class="stat-info"><div class="stat-value" id="cntInProgress">—</div><div class="stat-label">In Progress</div></div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-icon-wrap">📝</div>
+          <div class="stat-info"><div class="stat-value" id="cntTodo">—</div><div class="stat-label">Todo</div></div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon-wrap">✅</div>
+          <div class="stat-info"><div class="stat-value" id="cntDone">—</div><div class="stat-label">Done</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <!-- Tab bar -->
+        <div class="tab-bar">
+          <button class="tab-btn active" id="tab-list" onclick="switchTab('list')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg> List
+          </button>
+          <button class="tab-btn" id="tab-board" onclick="switchTab('board')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="4" height="15" rx="1"/></svg> Board
+          </button>
+          <button class="tab-btn" id="tab-timeline" onclick="switchTab('timeline')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Timeline
+          </button>
+        </div>
+
+        <!-- LIST TAB -->
+        <div class="tab-pane active" id="pane-list">
+          <div class="panel-header" style="border-top:none">
+            <div class="filter-row">
+              <select class="filter-select" id="fStatus" onchange="loadList(1)">
+                <option value="">All Status</option>
+                <option value="todo">Todo</option>
+                <option value="in-progress">In Progress</option>
+                <option value="done">Done</option>
+              </select>
+              <select class="filter-select" id="fPriority" onchange="loadList(1)">
+                <option value="">All Priority</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              <select class="filter-select" id="fLimit" onchange="loadList(1)">
+                <option value="10">10 / page</option>
+                <option value="20" selected>20 / page</option>
+                <option value="50">50 / page</option>
+              </select>
+            </div>
+            <button class="btn-sm" onclick="loadList(1)">↻ Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr><th>#</th><th>Title</th><th>Status</th><th>Priority</th><th>Due Date</th><th>Assigned</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="listBody">
+                <tr><td colspan="7" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="listPager"></div>
+        </div>
+
+        <!-- BOARD TAB -->
+        <div class="tab-pane" id="pane-board">
+          <div class="kanban-board" id="kanbanBoard">
+            <div class="loading-dots" style="grid-column:1/-1"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+
+        <!-- TIMELINE TAB -->
+        <div class="tab-pane" id="pane-timeline">
+          <div class="timeline" id="timelineContent">
+            <div class="loading-dots"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- TASK MODAL -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle">New Task</span>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <input type="hidden" id="editId" />
+      <div class="form-group"><label>Title *</label><input type="text" id="fTitle" placeholder="Task title…" /></div>
+      <div class="form-group"><label>Description</label><textarea id="fDesc" rows="2" placeholder="Optional description…" style="resize:vertical"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>Status</label>
+          <select id="fStat"><option value="todo">Todo</option><option value="in-progress">In Progress</option><option value="done">Done</option></select>
+        </div>
+        <div class="form-group"><label>Priority</label>
+          <select id="fPrio"><option value="medium">Medium</option><option value="high">High</option><option value="low">Low</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Due Date</label><input type="date" id="fDue" /></div>
+        <div class="form-group"><label>Assigned To</label><input type="text" id="fAssigned" placeholder="username…" /></div>
+      </div>
+      <div class="form-error" id="modalError"></div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveTask()">Save Task</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('modalOverlay').onclick = e => { if (e.target === e.currentTarget) closeModal(); };
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = (type === 'success' ? '✓ ' : '✗ ') + msg;
+      t.className = 'toast ' + type + ' show';
+      setTimeout(() => t.className = 'toast', 3000);
+    }
+
+    function fmt(dateStr) {
+      if (!dateStr) return '—';
+      return new Date(dateStr).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+    }
+
+    function isOverdue(dateStr) {
+      if (!dateStr) return false;
+      return new Date(dateStr) < new Date() && true;
+    }
+
+    function prioBadge(p)   { return `<span class="prio-${p}">${p}</span>`; }
+    function statusBadge(s) { return `<span class="task-status-${s}">${s}</span>`; }
+
+    // ── Tab switching ─────────────────────────────────────────────────────────
+    function switchTab(name) {
+      ['list','board','timeline'].forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('active', t === name);
+        document.getElementById('pane-' + t).classList.toggle('active', t === name);
+      });
+      if (name === 'board')    loadBoard();
+      if (name === 'timeline') loadTimeline();
+    }
+
+    // ── Pagination renderer ───────────────────────────────────────────────────
+    function renderPager(containerId, page, pages, cb) {
+      const el = document.getElementById(containerId);
+      if (pages <= 1) { el.innerHTML = ''; return; }
+      let h = `<button class="page-btn" onclick="${cb}(${page-1})" ${page<=1?'disabled':''}>‹</button>`;
+      for (let i = 1; i <= pages; i++) {
+        if (i === 1 || i === pages || (i >= page-2 && i <= page+2)) {
+          h += `<button class="page-btn ${i===page?'active':''}" onclick="${cb}(${i})">${i}</button>`;
+        } else if (i === page-3 || i === page+3) {
+          h += `<span class="page-ellipsis">…</span>`;
+        }
+      }
+      h += `<button class="page-btn" onclick="${cb}(${page+1})" ${page>=pages?'disabled':''}>›</button>`;
+      h += `<span class="page-info">Page ${page} of ${pages} · ${pages} pages</span>`;
+      el.innerHTML = h;
+    }
+
+    // ── Board stats ───────────────────────────────────────────────────────────
+    async function loadStats() {
+      try {
+        const r = await fetch('/tasks?limit=1000');
+        const d = await r.json();
+        const all = d.data || [];
+        document.getElementById('cntTotal').textContent = all.length;
+        document.getElementById('cntTodo').textContent       = all.filter(t => t.status === 'todo').length;
+        document.getElementById('cntInProgress').textContent = all.filter(t => t.status === 'in-progress').length;
+        document.getElementById('cntDone').textContent       = all.filter(t => t.status === 'done').length;
+      } catch {}
+    }
+
+    // ── LIST view ─────────────────────────────────────────────────────────────
+    async function loadList(page = 1) {
+      const status   = document.getElementById('fStatus').value;
+      const priority = document.getElementById('fPriority').value;
+      const limit    = document.getElementById('fLimit').value;
+      const body = document.getElementById('listBody');
+      body.innerHTML = '<tr><td colspan="7" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
+
+      try {
+        const params = new URLSearchParams({ page, limit });
+        if (status)   params.append('status', status);
+        if (priority) params.append('priority', priority);
+        const res = await fetch('/tasks?' + params);
+        const { data, total, pages } = await res.json();
+
+        if (!data || data.length === 0) {
+          body.innerHTML = '<tr><td colspan="7"><div class="empty-state"><p>No tasks found</p></div></td></tr>';
+          document.getElementById('listPager').innerHTML = '';
+          return;
+        }
+        body.innerHTML = data.map(t => `
+          <tr>
+            <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${t.id}</td>
+            <td style="font-weight:500;max-width:240px;white-space:normal;line-height:1.4">${t.title}</td>
+            <td>${statusBadge(t.status)}</td>
+            <td>${prioBadge(t.priority)}</td>
+            <td class="${isOverdue(t.due_date) && t.status!=='done' ? 'task-due overdue' : 'task-due'}">${fmt(t.due_date)}</td>
+            <td style="color:var(--text-dim)">${t.assigned_to || '—'}</td>
+            <td class="td-actions">
+              <button class="btn-sm" onclick='openModal(${JSON.stringify(t)})'>Edit</button>
+              <button class="btn-danger" onclick="deleteTask(${t.id})">Del</button>
+            </td>
+          </tr>`).join('');
+        renderPager('listPager', page, pages, 'loadList');
+      } catch {
+        body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--red)">Error loading tasks</td></tr>';
+      }
+    }
+
+    // ── BOARD view ────────────────────────────────────────────────────────────
+    async function loadBoard() {
+      document.getElementById('kanbanBoard').innerHTML = '<div class="loading-dots" style="grid-column:1/-1"><span></span><span></span><span></span></div>';
+      try {
+        const res = await fetch('/tasks/board');
+        const board = await res.json();
+        const cols = [
+          { key:'todo',        label:'📝 Todo',        color:'var(--text-dim)' },
+          { key:'in-progress', label:'🔄 In Progress',  color:'var(--cyan)' },
+          { key:'done',        label:'✅ Done',         color:'var(--green)' }
+        ];
+        document.getElementById('kanbanBoard').innerHTML = cols.map(col => `
+          <div class="kanban-col">
+            <div class="kanban-col-header" style="color:${col.color}">
+              ${col.label}
+              <span class="col-count">${(board[col.key] || []).length}</span>
+            </div>
+            <div class="kanban-col-body">
+              ${(board[col.key] || []).length === 0
+                ? '<div style="color:var(--text-muted);font-size:.78rem;text-align:center;padding:.5rem">Empty</div>'
+                : (board[col.key] || []).map(t => `
+                  <div class="task-card" onclick='openModal(${JSON.stringify(t)})'>
+                    <div class="task-card-title">${t.title}</div>
+                    <div class="task-card-meta">
+                      ${prioBadge(t.priority)}
+                      ${t.due_date ? `<span class="task-due ${isOverdue(t.due_date) && t.status!=='done' ? 'overdue':''}">${fmt(t.due_date)}</span>` : ''}
+                      ${t.assigned_to ? `<span style="font-size:.65rem;color:var(--text-dim)">@${t.assigned_to}</span>` : ''}
+                    </div>
+                  </div>`).join('')
+              }
+            </div>
+          </div>`).join('');
+      } catch {
+        document.getElementById('kanbanBoard').innerHTML = '<p style="color:var(--red);padding:1.5rem">Error loading board</p>';
+      }
+    }
+
+    // ── TIMELINE view ─────────────────────────────────────────────────────────
+    async function loadTimeline() {
+      document.getElementById('timelineContent').innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+      try {
+        const res = await fetch('/tasks/timeline');
+        const tasks = await res.json();
+
+        if (!tasks.length) {
+          document.getElementById('timelineContent').innerHTML = '<div class="empty-state"><p>No tasks with due dates</p></div>';
+          return;
+        }
+
+        // Group by due_date
+        const groups = {};
+        tasks.forEach(t => {
+          const key = t.due_date ? new Date(t.due_date).toISOString().split('T')[0] : 'no-date';
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(t);
+        });
+
+        const today = new Date().toISOString().split('T')[0];
+        let html = '<div class="timeline">';
+        Object.keys(groups).sort().forEach(dateKey => {
+          const label = dateKey === 'no-date' ? 'No Due Date'
+            : dateKey === today ? '📅 Today — ' + fmt(dateKey)
+            : dateKey < today  ? '⚠️ Overdue — ' + fmt(dateKey)
+            : '📌 ' + fmt(dateKey);
+
+          html += `<div class="timeline-date-group">
+            <div class="timeline-date-label">${label}</div>`;
+          groups[dateKey].forEach(t => {
+            html += `
+              <div class="timeline-item">
+                <div class="timeline-dot ${t.status.replace('-progress','-progress')} ${t.status}"></div>
+                <div class="timeline-content">
+                  <div class="timeline-title">${t.title}</div>
+                  <div class="timeline-meta">
+                    ${statusBadge(t.status)} ${prioBadge(t.priority)}
+                    ${t.assigned_to ? `<span>@${t.assigned_to}</span>` : ''}
+                    ${t.description ? `<span style="color:var(--text-muted)">${t.description.substring(0,60)}${t.description.length>60?'…':''}</span>` : ''}
+                  </div>
+                </div>
+                <div class="timeline-actions">
+                  <button class="btn-sm" onclick='openModal(${JSON.stringify(t)})'>Edit</button>
+                  <button class="btn-danger" onclick="deleteTask(${t.id})">Del</button>
+                </div>
+              </div>`;
+          });
+          html += '</div>';
+        });
+        html += '</div>';
+        document.getElementById('timelineContent').innerHTML = html;
+      } catch {
+        document.getElementById('timelineContent').innerHTML = '<p style="color:var(--red);padding:1.5rem">Error loading timeline</p>';
+      }
+    }
+
+    // ── Modal ─────────────────────────────────────────────────────────────────
+    function openModal(task = null) {
+      document.getElementById('editId').value    = task ? task.id : '';
+      document.getElementById('modalTitle').textContent = task ? 'Edit Task' : 'New Task';
+      document.getElementById('fTitle').value    = task?.title       || '';
+      document.getElementById('fDesc').value     = task?.description || '';
+      document.getElementById('fStat').value     = task?.status      || 'todo';
+      document.getElementById('fPrio').value     = task?.priority    || 'medium';
+      document.getElementById('fDue').value      = task?.due_date    ? task.due_date.split('T')[0] : '';
+      document.getElementById('fAssigned').value = task?.assigned_to || '';
+      document.getElementById('modalError').textContent = '';
+      document.getElementById('modalOverlay').classList.add('open');
+    }
+
+    function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+    async function saveTask() {
+      const id = document.getElementById('editId').value;
+      const body = {
+        title:       document.getElementById('fTitle').value,
+        description: document.getElementById('fDesc').value,
+        status:      document.getElementById('fStat').value,
+        priority:    document.getElementById('fPrio').value,
+        due_date:    document.getElementById('fDue').value || null,
+        assigned_to: document.getElementById('fAssigned').value || null,
+      };
+      try {
+        const res = await fetch(id ? `/tasks/${id}` : '/tasks', {
+          method:  id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(body)
+        });
+        if (!res.ok) {
+          const e = await res.json();
+          document.getElementById('modalError').textContent = (e.errors || [e.error]).join(', ');
+          return;
+        }
+        closeModal();
+        showToast(id ? 'Task updated' : 'Task created');
+        refresh();
+      } catch { document.getElementById('modalError').textContent = 'Network error'; }
+    }
+
+    async function deleteTask(id) {
+      if (!confirm('Delete this task?')) return;
+      try {
+        await fetch(`/tasks/${id}`, { method: 'DELETE' });
+        showToast('Task deleted');
+        refresh();
+      } catch { showToast('Delete failed', 'error'); }
+    }
+
+    function refresh() {
+      loadStats();
+      const activeTab = document.querySelector('.tab-btn.active').id.replace('tab-','');
+      if (activeTab === 'list')     loadList(1);
+      if (activeTab === 'board')    loadBoard();
+      if (activeTab === 'timeline') loadTimeline();
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    loadStats();
+    loadList(1);
+  </script>
+</body>
+</html>

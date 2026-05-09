@@ -3,11 +3,12 @@
 A full-stack inventory management system built with Node.js, Express, PostgreSQL, and Redis. Features a dark neon-blue themed UI with sidebar navigation, real-time health monitoring, and comprehensive data management.
 
 <div align="center">
-  <img src="imgs/dashboard.svg" alt="Dashboard" width="48%" />
-  <img src="imgs/inventory.svg" alt="Inventory" width="48%" />
-  <img src="imgs/network.svg" alt="Network Status" width="48%" />
-  <img src="imgs/tasks.svg" alt="Tasks Kanban" width="48%" />
-  <img src="imgs/settings.svg" alt="Settings" width="48%" />
+  <img src="imgs/dashboard.png" alt="Dashboard" width="48%" />
+  <img src="imgs/inventory.png" alt="Inventory" width="48%" />
+  <img src="imgs/network.png" alt="Network Status" width="48%" />
+  <img src="imgs/tasks.png" alt="Tasks Kanban" width="48%" />
+  <img src="imgs/settings.png" alt="Settings" width="48%" />
+  <img src="imgs/login.png" alt="Login Page" width="48%" />
 </div>
 
 ---

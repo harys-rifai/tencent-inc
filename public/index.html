@@ -108,15 +108,22 @@
     </div>
   </main>
 
-   <script>
-    document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+    <script>
+     document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
 
-    // Auth guard
-    if (!localStorage.getItem('invbit_user')) {
-      window.location.href = '/login';
-    }
+     // Auth guard
+     const user = JSON.parse(localStorage.getItem('invbit_user') || '{}');
+     if (!user.id) {
+       window.location.href = '/login';
+     }
 
-    async function loadStats() {
+     // Hide Settings menu if not admin
+     if (user.role !== 'admin') {
+       const settingsLink = document.querySelector('a[href="settings.html"]');
+       if (settingsLink) settingsLink.style.display = 'none';
+     }
+
+     async function loadStats() {
       try {
         const [statsRes, recentRes] = await Promise.all([
           fetch('/inventory/stats'),

@@ -84,11 +84,17 @@
     document.getElementById('apiBase').textContent = window.location.origin;
 
     // Auth guard
-    if (!localStorage.getItem('invbit_user')) {
+    const user = JSON.parse(localStorage.getItem('invbit_user') || '{}');
+    if (!user.id) {
       window.location.href = '/login';
     }
+    // Hide Settings menu if not admin
+    if (user.role !== 'admin') {
+      const settingsLink = document.querySelector('a[href="settings.html"]');
+      if (settingsLink) settingsLink.style.display = 'none';
+    }
 
-     async function checkHealth() {
+    async function checkHealth() {
        document.getElementById('lastChecked').textContent = new Date().toLocaleTimeString();
        const setStatus = (pg, rd, badgeClass, badgeHtml) => {
          document.getElementById('pgStatus').textContent = pg;

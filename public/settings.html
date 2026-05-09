@@ -68,8 +68,8 @@
         </div>
       </div>
 
-      <!-- User Management -->
-      <div class="panel section-gap">
+        <!-- User Management (Admin Only) -->
+        <div class="panel section-gap admin-panel" id="userManagementPanel">
         <div class="panel-header">
           <span class="panel-title">User Management</span>
            <div style="display:flex;gap:.5rem;align-items:center">
@@ -93,47 +93,83 @@
           </table>
         </div>
          <div class="pagination" id="userPager"></div>
-       </div> <!-- close User Management panel -->
-       <div class="panel section-gap">
-         <div class="panel-header">
-           <span class="panel-title">Error Logs</span>
-           <div style="display:flex;gap:.5rem;align-items:center">
-             <button class="btn-primary btn-sm" onclick="exportTable('error_logs')">Export CSV</button>
-           </div>
-         </div>
-         <div class="table-wrapper">
-           <table class="data-table">
-             <thead>
-               <tr><th>#</th><th>Level</th><th>Message</th><th>Source</th><th>Route</th><th>Created</th></tr>
-             </thead>
-             <tbody id="errorsBody">
-               <tr><td colspan="6" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
-             </tbody>
-           </table>
-         </div>
-       </div>
+         </div> <!-- close User Management panel -->
 
-       <!-- Menu Items -->
-       <div class="panel section-gap">
-         <div class="panel-header">
-           <span class="panel-title">Menu Items</span>
-           <div style="display:flex;gap:.5rem;align-items:center">
-             <button class="btn-primary btn-sm" onclick="exportTable('menu_items')">Export CSV</button>
-           </div>
-         </div>
-         <div class="table-wrapper">
-           <table class="data-table">
-             <thead>
-               <tr><th>#</th><th>Label</th><th>Icon</th><th>Href</th><th>Order</th><th>Active</th></tr>
-             </thead>
-             <tbody id="menuBody">
-               <tr><td colspan="6" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
-             </tbody>
-           </table>
-         </div>
-       </div>
-     </div>
-   </main>
+        <!-- Error Logs (Admin Only) -->
+        <div class="panel section-gap admin-panel" id="errorLogsPanel">
+          <div class="panel-header">
+            <span class="panel-title">Error Logs</span>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <button class="btn-primary btn-sm" onclick="exportTable('error_logs')">Export CSV</button>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr><th>#</th><th>Level</th><th>Message</th><th>Source</th><th>Route</th><th>Created</th></tr>
+              </thead>
+              <tbody id="errorsBody">
+                <tr><td colspan="6" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Menu Items (Admin Only) -->
+        <div class="panel section-gap admin-panel" id="menuItemsPanel">
+          <div class="panel-header">
+            <span class="panel-title">Menu Items</span>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <button class="btn-primary btn-sm" onclick="exportTable('menu_items')">Export CSV</button>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr><th>#</th><th>Label</th><th>Icon</th><th>Href</th><th>Order</th><th>Active</th></tr>
+              </thead>
+              <tbody id="menuBody">
+                <tr><td colspan="6" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Edit User Modal -->
+        <div class="modal-overlay" id="editModalOverlay">
+          <div class="modal">
+            <div class="modal-header">
+              <span class="modal-title">Edit User</span>
+              <button class="modal-close" onclick="closeEditModal()">×</button>
+            </div>
+            <input type="hidden" id="editUserId" />
+            <div class="form-row">
+              <div class="form-group"><label>Username</label><input type="text" id="editUsername" /></div>
+              <div class="form-group"><label>Role</label>
+                <select id="editRole">
+                  <option value="user">User</option>
+                  <option value="dba">DBA</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>New Password (leave blank to keep current)</label>
+              <input type="password" id="editPassword" placeholder="••••••••" />
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="editActive" checked /> Active</label>
+            </div>
+            <div class="form-error" id="editError"></div>
+            <div class="modal-actions">
+              <button class="btn-ghost" onclick="closeEditModal()">Cancel</button>
+              <button class="btn-primary" onclick="saveUserChanges()">Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- close page-wrapper -->
+    </main>
 
   <div class="toast" id="toast"></div>
 
@@ -154,36 +190,50 @@
 
     function saveSettings() { showToast('Configuration saved'); }
 
-    async function addUser() {
-      const username = document.getElementById('newUsername').value.trim();
-      const password = document.getElementById('newPassword').value;
-      const role     = document.getElementById('newRole').value;
-      if (!username || !password) { showToast('Username and password required', 'error'); return; }
-      try {
-        const res = await fetch('/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, role })
-        });
-        if (!res.ok) throw new Error();
-        document.getElementById('newUsername').value = '';
-        document.getElementById('newPassword').value = '';
-        showToast('User added');
-        loadUsers();
-      } catch { showToast('Failed to add user', 'error'); }
-    }
+     async function addUser() {
+       const username = document.getElementById('newUsername').value.trim();
+       const password = document.getElementById('newPassword').value;
+       const role     = document.getElementById('newRole').value;
+       if (!username || !password) { showToast('Username and password required', 'error'); return; }
+       try {
+         const res = await fetch('/users', {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json',
+             'X-User-Id': currentUser.id
+           },
+           body: JSON.stringify({ username, password, role })
+         });
+         if (!res.ok) {
+           const data = await res.json();
+           showToast(data.error || 'Failed to add user', 'error');
+           return;
+         }
+         document.getElementById('newUsername').value = '';
+         document.getElementById('newPassword').value = '';
+         showToast('User added');
+         loadUsers();
+       } catch { showToast('Failed to add user', 'error'); }
+     }
 
-    async function deleteUser(id) {
-      if (!confirm('Delete user ' + id + '?')) return;
-      try {
-        const res = await fetch(`/users/${id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error('Delete failed');
-        showToast('User deleted');
-        loadUsers();
-      } catch {
-        showToast('Delete failed', 'error');
-      }
-    }
+     async function deleteUser(id) {
+       if (!confirm('Delete user ' + id + '?')) return;
+       try {
+         const res = await fetch(`/users/${id}`, {
+           method: 'DELETE',
+           headers: { 'X-User-Id': currentUser.id }
+         });
+         if (!res.ok) {
+           const data = await res.json();
+           showToast(data.error || 'Delete failed', 'error');
+           return;
+         }
+         showToast('User deleted');
+         loadUsers();
+       } catch {
+         showToast('Delete failed', 'error');
+       }
+     }
 
      async function exportTable(table) {
        try {
@@ -205,11 +255,21 @@
        }
      }
 
-     // ── Error Logs ─────────────────────────────────────────────────────────────
-     async function loadErrors() {
-       try {
-         const res = await fetch('/errors?limit=50');
-         const { data: errors } = await res.json();
+      // ── Error Logs ─────────────────────────────────────────────────────────────
+      async function loadErrors() {
+        try {
+          const res = await fetch('/errors?limit=50', {
+            headers: { 'X-User-Id': currentUser.id }
+          });
+          const { data: errors } = await res.json();
+          if (!res.ok) {
+            if (res.status === 403) {
+              document.getElementById('errorsBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red)">Admin access required</td></tr>';
+            } else {
+              throw new Error('Failed to load');
+            }
+            return;
+          }
          document.getElementById('errorsBody').innerHTML = errors.map(e => `
            <tr>
              <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${e.id}</td>
@@ -225,11 +285,21 @@
        }
      }
 
-     // ── Menu Items ─────────────────────────────────────────────────────────────
-     async function loadMenu() {
-       try {
-         const res = await fetch('/admin/menu');
-         const menu = await res.json();
+      // ── Menu Items ─────────────────────────────────────────────────────────────
+      async function loadMenu() {
+        try {
+          const res = await fetch('/admin/menu', {
+            headers: { 'X-User-Id': currentUser.id }
+          });
+          const menu = await res.json();
+          if (!res.ok) {
+            if (res.status === 403) {
+              document.getElementById('menuBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red)">Admin access required</td></tr>';
+            } else {
+              throw new Error('Failed to load');
+            }
+            return;
+          }
          document.getElementById('menuBody').innerHTML = menu.map(m => `
            <tr>
              <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${m.id}</td>
@@ -245,27 +315,30 @@
        }
      }
 
-     async function loadUsers(page = 1) {
-      const limit = document.getElementById('userLimit').value;
-      document.getElementById('usersBody').innerHTML = '<tr><td colspan="5" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
-      try {
-        const res = await fetch(`/users?page=${page}&limit=${limit}`);
-        const { data: users, pages } = await res.json();
+      async function loadUsers(page = 1) {
+       const limit = document.getElementById('userLimit').value;
+       document.getElementById('usersBody').innerHTML = '<tr><td colspan="5" class="loading-cell"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>';
+       try {
+         const res = await fetch(`/users?page=${page}&limit=${limit}`, {
+           headers: { 'X-User-Id': currentUser.id }
+         });
+         const { data: users, pages } = await res.json();
         if (!users || users.length === 0) {
           document.getElementById('usersBody').innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>No users found</p></div></td></tr>';
           document.getElementById('userPager').innerHTML = '';
           return;
         }
-        document.getElementById('usersBody').innerHTML = users.map(u => `
-          <tr>
-            <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${u.id}</td>
-            <td style="font-weight:500">${u.username}</td>
-            <td><span class="role-badge role-${u.role}">${u.role.toUpperCase()}</span></td>
-            <td style="color:var(--text-dim);font-size:.75rem">${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
-            <td class="td-actions">
-              <button class="btn-danger" onclick="deleteUser(${u.id})">Delete</button>
-            </td>
-          </tr>`).join('');
+         document.getElementById('usersBody').innerHTML = users.map(u => `
+           <tr>
+             <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.72rem">${u.id}</td>
+             <td style="font-weight:500">${u.username}</td>
+             <td><span class="role-badge role-${u.role}">${u.role.toUpperCase()}</span></td>
+             <td style="color:var(--text-dim);font-size:.75rem">${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
+             <td class="td-actions">
+               ${(isAdmin || String(currentUser.id) === String(u.id)) ? `<button class="btn-sm" onclick='editUser(${JSON.stringify(u)})'>Edit</button>` : ''}
+               ${isAdmin && String(currentUser.id) !== String(u.id) ? `<button class="btn-danger" onclick="deleteUser(${u.id})">Delete</button>` : ''}
+             </td>
+           </tr>`).join('');
         // Pager
         const el = document.getElementById('userPager');
         if (pages <= 1) { el.innerHTML = ''; return; }
@@ -280,11 +353,93 @@
         el.innerHTML = h;
       } catch {
         document.getElementById('usersBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--red)">Error loading users</td></tr>';
-      }
-    }
+       }
+     }
+
+     // ── Edit User Modal ─────────────────────────────────────────────────────────
+     async function openEditModal(user) {
+       // Fetch fresh user data
+       try {
+         const res = await fetch(`/users/${user.id}`, {
+           headers: { 'X-User-Id': currentUser.id }
+         });
+         if (!res.ok) throw new Error('Failed to load user');
+         const userData = await res.json();
+
+         document.getElementById('editUserId').value = userData.id;
+         document.getElementById('editUsername').value = userData.username;
+         document.getElementById('editRole').value = userData.role;
+         document.getElementById('editActive').checked = userData.active !== false;
+
+         // Role field disabled for non-admin editing
+         const isAdmin = currentUser.role === 'admin';
+         document.getElementById('editRole').disabled = !isAdmin;
+
+         document.getElementById('editPassword').value = '';
+         document.getElementById('editError').textContent = '';
+         document.getElementById('editModalOverlay').classList.add('open');
+       } catch (err) {
+         showToast('Failed to load user', 'error');
+       }
+     }
+
+     function closeEditModal() {
+       document.getElementById('editModalOverlay').classList.remove('open');
+     }
+
+     async function saveUserChanges() {
+       const id = document.getElementById('editUserId').value;
+       const body = {
+         username: document.getElementById('editUsername').value,
+         password: document.getElementById('editPassword').value || null,
+         role: document.getElementById('editRole').value,
+         active: document.getElementById('editActive').checked
+       };
+
+       if (!body.username) {
+         document.getElementById('editError').textContent = 'Username is required';
+         return;
+       }
+
+       try {
+         const res = await fetch(`/users/${id}`, {
+           method: 'PUT',
+           headers: {
+             'Content-Type': 'application/json',
+             'X-User-Id': currentUser.id
+           },
+           body: JSON.stringify(body)
+         });
+
+         const data = await res.json();
+         if (!res.ok) {
+           document.getElementById('editError').textContent = data.error || 'Update failed';
+           return;
+         }
+
+         closeEditModal();
+         showToast('User updated');
+         loadUsers();
+       } catch (err) {
+         document.getElementById('editError').textContent = 'Network error';
+       }
+     }
+
+     // ── Init ──────────────────────────────────────────────────────────────────
+     const currentUser = JSON.parse(localStorage.getItem('invbit_user') || '{}');
+     const isAdmin = currentUser.role === 'admin';
+
+     // Hide admin-only panels for non-admin users
+     if (!isAdmin) {
+       document.querySelectorAll('.admin-panel').forEach(el => el.style.display = 'none');
+     }
+
      loadUsers();
      loadErrors();
      loadMenu();
+
+     // Make currentUser available globally for permission checks
+     window.currentUser = currentUser;
    </script>
 
   <style>

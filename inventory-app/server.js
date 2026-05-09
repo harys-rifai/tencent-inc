@@ -55,6 +55,28 @@ const toCSV = (rows) => {
   return csvRows.join('\n');
 };
 
+// ── Auth middleware ────────────────────────────────────────────────────────────
+const requireAdmin = async (req, res, next) => {
+  try {
+    // Get user from localStorage via header or session? For simplicity, check from body/query
+    // In production, use JWT or session cookie
+    const userId = req.headers['x-user-id']; // Will be sent from frontend
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    const result = await query('SELECT role FROM invschema.users WHERE id = $1', [userId]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    if (result.rows[0].role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    req.user = result.rows[0];
+    next();
+  } catch (err) {
+    console.error('Auth error:', err);
+    res.status(500).json({ error: 'Authorization failed' });
+  }
+};
+
 // ── Error logging helper ──────────────────────────────────────────────────────
 const logError = async (err, context = {}) => {
   try {
@@ -479,6 +501,15 @@ app.delete('/tasks/:id', async (req, res) => {
 // GET /users?page&limit
 app.get('/users', async (req, res) => {
   try {
+    const adminId = req.headers['x-user-id'];
+    if (!adminId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    const admin = await query('SELECT role FROM invschema.users WHERE id = $1', [adminId]);
+    if (admin.rows.length === 0 || admin.rows[0].role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
     const { page, limit, offset } = paginate(req);
     const cacheKey = `users_p${page}_l${limit}`;
     const cached = await getCache(cacheKey);
@@ -486,21 +517,18 @@ app.get('/users', async (req, res) => {
 
     const [countRes, dataRes] = await Promise.all([
       query('SELECT COUNT(*) FROM invschema.users'),
-      query('SELECT id,username,role,created_at FROM invschema.users ORDER BY id LIMIT $1 OFFSET $2', [limit, offset])
+      query('SELECT id,username,role,created_at,active FROM invschema.users ORDER BY id LIMIT $1 OFFSET $2', [limit, offset])
     ]);
 
     const result = paginatedResult(dataRes.rows, countRes.rows[0].count, page, limit);
     await setCache(cacheKey, result, 300);
     res.json(result);
-   } catch (err) {
-     console.error(err);
-     await logError(err, {
-       source: 'inventory',
-       route: req.path,
-       method: req.method,
-       ip_address: req.ip || req.connection.remoteAddress,
-       user_agent: req.get('User-Agent')
-     });
+  } catch (err) {
+    console.error(err);
+    await logError(err, { source: 'users', route: req.path, method: req.method });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
      res.status(500).json({ error: 'Internal server error' });
    }
 });
@@ -508,6 +536,16 @@ app.get('/users', async (req, res) => {
 app.post('/users', async (req, res) => {
   try {
     const { username, password, role } = req.body;
+    // Only admins can create users (check via header)
+    const adminId = req.headers['x-user-id'];
+    if (!adminId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    const admin = await query('SELECT role FROM invschema.users WHERE id = $1', [adminId]);
+    if (admin.rows.length === 0 || admin.rows[0].role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
     const result = await query(
       'INSERT INTO invschema.users (username,password,role) VALUES ($1,$2,$3) RETURNING id,username,role,created_at',
       [username, password, role || 'user']
@@ -516,21 +554,140 @@ app.post('/users', async (req, res) => {
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
+    await logError(err, { source: 'users', route: req.path, method: req.method });
     res.status(500).json({ error: 'Internal server error' });
-   }
- });
+  }
+});
 
- app.delete('/users/:id', async (req, res) => {
+// PUT /users/:id — update user (admin only, or self for password)
+app.put('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const { username, password, role, active } = req.body;
+    const adminId = req.headers['x-user-id'];
+
+    // Authenticate
+    if (!adminId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    const admin = await query('SELECT role FROM invschema.users WHERE id = $1', [adminId]);
+    if (admin.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const isAdmin = admin.rows[0].role === 'admin';
+    const isSelf = String(adminId) === String(id);
+
+    // Permissions: admin can edit anyone; user can only edit self for password
+    if (!isAdmin && !isSelf) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    // Build update query dynamically
+    const updates = [];
+    const params = [];
+    let paramCount = 0;
+
+    if (username && isAdmin) {
+      paramCount++; updates.push(`username = $${paramCount}`); params.push(username);
+    }
+    if (password) {
+      paramCount++; updates.push(`password = $${paramCount}`); params.push(password);
+    }
+    if (role && isAdmin) {
+      paramCount++; updates.push(`role = $${paramCount}`); params.push(role);
+    }
+    if (active !== undefined && isAdmin) {
+      paramCount++; updates.push(`active = $${paramCount}`); params.push(active);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+
+    paramCount++; updates.push(`updated_at = NOW()`);
+    params.push(id);
+
+    const result = await query(
+      `UPDATE invschema.users SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING id,username,role,created_at`,
+      params
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    await deleteCachePattern('users_*');
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    await logError(err, { source: 'users', route: req.path, method: req.method, user_id: req.headers['x-user-id'] });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /users/:id — get single user (self or admin)
+app.get('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const adminId = req.headers['x-user-id'];
+
+    // Auth check
+    if (!adminId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const admin = await query('SELECT role FROM invschema.users WHERE id = $1', [adminId]);
+    if (admin.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const isAdmin = admin.rows[0].role === 'admin';
+    const isSelf = String(adminId) === String(id);
+
+    if (!isAdmin && !isSelf) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    const result = await query('SELECT id,username,role,created_at,active FROM invschema.users WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const adminId = req.headers['x-user-id'];
+
+    // Only admins can delete users
+    if (!adminId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    const admin = await query('SELECT role FROM invschema.users WHERE id = $1', [adminId]);
+    if (admin.rows.length === 0 || admin.rows[0].role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    // Prevent self-deletion
+    if (String(adminId) === String(id)) {
+      return res.status(400).json({ error: 'Cannot delete yourself' });
+    }
+
     await query('DELETE FROM invschema.users WHERE id=$1', [id]);
     await deleteCachePattern('users_*');
     res.json({ message: 'User deleted' });
   } catch (err) {
     console.error(err);
+    await logError(err, { source: 'users', route: req.path, method: req.method });
     res.status(500).json({ error: 'Internal server error' });
-   }
- });
+  }
+});
 
  // ════════════════════════════════════════════════════════════════════════════
 //  CSV EXPORT ROUTES
@@ -606,7 +763,7 @@ app.get('/menu', async (req, res) => {
 });
 
 // GET /admin/menu — full menu data (for admin editing)
-app.get('/admin/menu', async (req, res) => {
+app.get('/admin/menu', requireAdmin, async (req, res) => {
   try {
     const result = await query(`
       SELECT * FROM invschema.menu_items
@@ -620,7 +777,7 @@ app.get('/admin/menu', async (req, res) => {
 });
 
 // POST /admin/menu — create menu item
-app.post('/admin/menu', async (req, res) => {
+app.post('/admin/menu', requireAdmin, async (req, res) => {
   try {
     const { label, icon, href, order_index, active, parent_id } = req.body;
     const result = await query(`
@@ -636,7 +793,7 @@ app.post('/admin/menu', async (req, res) => {
 });
 
 // PUT /admin/menu/:id — update menu item
-app.put('/admin/menu/:id', async (req, res) => {
+app.put('/admin/menu/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { label, icon, href, order_index, active, parent_id } = req.body;
@@ -655,7 +812,7 @@ app.put('/admin/menu/:id', async (req, res) => {
 });
 
 // DELETE /admin/menu/:id — delete menu item
-app.delete('/admin/menu/:id', async (req, res) => {
+app.delete('/admin/menu/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const result = await query('DELETE FROM invschema.menu_items WHERE id = $1 RETURNING *', [id]);
@@ -671,7 +828,7 @@ app.delete('/admin/menu/:id', async (req, res) => {
 //  ERROR LOG ROUTES
 // ════════════════════════════════════════════════════════════════════════════
 
-// POST /errors — log an error
+// POST /errors — log an error (public endpoint, no auth required)
 app.post('/errors', async (req, res) => {
   try {
     const { level, message, stack, source, route, method, user_id, ip_address, user_agent, metadata } = req.body;
